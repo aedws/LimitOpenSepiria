@@ -19,6 +19,8 @@ namespace UnityEngine
     {
         public Transform transform { get { return null; } }
         public GameObject gameObject { get { return null; } }
+        public Component GetComponent(System.Type type) { return null; }
+        public Component[] GetComponents(System.Type type) { return null; }
     }
 
     public class Transform : Component
@@ -27,10 +29,18 @@ namespace UnityEngine
         public int GetSiblingIndex() { return 0; }
         public void SetSiblingIndex(int index) { }
         public bool IsChildOf(Transform parent) { return false; }
+        public int childCount { get { return 0; } }
+        public Transform GetChild(int index) { return null; }
+        public void SetParent(Transform parent, bool worldPositionStays) { }
+        public Vector3 InverseTransformPoint(Vector3 position) { return default; }
     }
 
     public sealed class GameObject : Object
     {
+        public GameObject(string name, params System.Type[] components) { }
+        public int layer { get { return 0; } set { } }
+        public Component AddComponent(System.Type componentType) { return null; }
+        public Component GetComponent(System.Type type) { return null; }
         public Transform transform { get { return null; } }
         public bool activeSelf { get { return false; } }
         public void SetActive(bool value) { }
@@ -43,8 +53,28 @@ namespace UnityEngine
         public Vector2(float x, float y) { this.x = x; this.y = y; }
     }
 
+    public struct Vector3
+    {
+        public float x;
+        public float y;
+        public float z;
+        public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+    }
+
+    public struct Color
+    {
+        public float r;
+        public float g;
+        public float b;
+        public float a;
+        public Color(float r, float g, float b, float a) { this.r = r; this.g = g; this.b = b; this.a = a; }
+    }
+
     public sealed class RectTransform : Transform
     {
+        public Vector2 offsetMin { get { return default; } set { } }
+        public Vector2 offsetMax { get { return default; } set { } }
+        public void GetWorldCorners(Vector3[] fourCornersArray) { }
         public Vector2 anchorMin { get { return default; } set { } }
         public Vector2 anchorMax { get { return default; } set { } }
         public Vector2 pivot { get { return default; } set { } }

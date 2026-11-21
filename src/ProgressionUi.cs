@@ -55,7 +55,7 @@ namespace LimitOpenSepiria
         private static FieldInfo buttonText;
         private static PropertyInfo textProperty;
 
-        private static bool loggedFailure;
+        private static bool loggedFruitLayout;
 
         public static void Apply(Harmony harmony)
         {
@@ -213,6 +213,7 @@ namespace LimitOpenSepiria
 
         private static void FruitOpenedPostfix(object __instance)
         {
+            Guard("과일 꼬치 탭 스크롤 구성", () => EnsureFruitScroll(__instance));
             Guard("과일 꼬치 탭 버튼 구성", () =>
             {
                 FruitBar bar = FruitBars.GetOrCreateValue(__instance);
@@ -220,6 +221,46 @@ namespace LimitOpenSepiria
                     BuildFruitBar(__instance, bar);
                 RefreshFruitBar(__instance, bar);
             });
+        }
+
+        // 과일을 많이 고르면 오른쪽 '등장 확률 보너스' 목록과 가운데 꼬치가 화면 밖으로 넘칩니다.
+        // 각각을 스크롤 영역으로 감쌉니다. 한 번 감싸면 화면이 살아 있는 동안 유지됩니다.
+        private static void EnsureFruitScroll(object panel)
+        {
+            Type type = panel.GetType();
+            var effects = Field(type, panel, "effectInfoContainer") as Transform;
+            var plus = Field(type, panel, "selectedFruitContainer_Plus") as Transform;
+            var minus = Field(type, panel, "selectedFruitContainer_Minus") as Transform;
+
+            bool allWrapped = ScrollWrap.IsWrapped(effects) && ScrollWrap.IsWrapped(plus) && ScrollWrap.IsWrapped(minus);
+            if (!allWrapped && !loggedFruitLayout)
+            {
+                // 배치가 어긋났을 때 원인을 볼 수 있도록, 손대기 전의 화면 구조를 한 번 남깁니다.
+                loggedFruitLayout = true;
+                Log.Info("과일 꼬치 화면 구조:\n" + ScrollWrap.Describe(((Component)panel).transform, 4, 6));
+            }
+
+            // 목록 아래쪽에 자리 잡은 안내 문구 위에서 끝나게 합니다.
+            ScrollWrap.Wrap(effects, 0f, new[]
+            {
+                new ScrollWrap.Obstacle(Field(type, panel, "sapphireBonusEnabledMessageText"), 0f),
+                new ScrollWrap.Obstacle(Field(type, panel, "adaptiveItemDropBonusEnabledMessageObj"), 0f),
+            }, "과일 꼬치 효과 목록");
+
+            // 꼬치는 '선택된 과일 n / m' 글자 위에서 끝나게 합니다. 과일 그림은 컨테이너보다 넓으므로 좌우를 넉넉히 둡니다.
+            var skewerLimits = new[]
+            {
+                new ScrollWrap.Obstacle(Field(type, panel, "fruitCountText"), 22f),
+                new ScrollWrap.Obstacle(Field(type, panel, "resetButtonObj"), 0f),
+            };
+            ScrollWrap.Wrap(plus, 80f, skewerLimits, "과일 꼬치(증가)");
+            ScrollWrap.Wrap(minus, 80f, skewerLimits, "과일 꼬치(감소)");
+        }
+
+        private static object Field(Type type, object instance, string name)
+        {
+            FieldInfo field = type.GetField(name, GameReflection.Any);
+            return field != null ? field.GetValue(instance) : null;
         }
 
         private static void BuildFruitBar(object panel, FruitBar bar)
@@ -284,6 +325,8 @@ namespace LimitOpenSepiria
             return GameReflection.CurrentLanguage().StartsWith("ko", StringComparison.OrdinalIgnoreCase) ? korean : english;
         }
 
+        private static readonly HashSet<string> LoggedFailures = new HashSet<string>();
+
         private static void Guard(string what, Action action)
         {
             try
@@ -292,10 +335,8 @@ namespace LimitOpenSepiria
             }
             catch (Exception e)
             {
-                if (loggedFailure)
-                    return;
-                loggedFailure = true;
-                Log.Error(what + " 중 오류(이후 같은 오류는 기록하지 않습니다): " + e);
+                if (LoggedFailures.Add(what))
+                    Log.Error(what + " 중 오류(이후 같은 오류는 기록하지 않습니다): " + e);
             }
         }
 
