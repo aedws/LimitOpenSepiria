@@ -1,0 +1,6 @@
+obj/
+**/obj/
+stubs/**/bin/
+*.pdb
+*.user
+.vs/
