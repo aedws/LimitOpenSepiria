@@ -37,16 +37,33 @@ namespace LimitOpenSepiria
             }
             catch (Exception e)
             {
-                Log.Error("패치 적용 중 오류: " + e);
+                Log.Error("소원 분수 패치 적용 중 오류: " + e);
+            }
+
+            try
+            {
+                ProgressionPatches.Apply(harmony);
+                HorayModAPI.OnPlayerAvatarSpawnedServerside += HandlePlayerSpawned;
+            }
+            catch (Exception e)
+            {
+                Log.Error("재능·과일 꼬치 패치 적용 중 오류: " + e);
             }
 
             Log.Info("로드됨 v" + metadata.modVersion);
+        }
+
+        private static void HandlePlayerSpawned(PlayerAvatar player)
+        {
+            ProgressionPatches.OnPlayerSpawned(player);
         }
 
         protected override void OnModUnloaded()
         {
             try
             {
+                HorayModAPI.OnPlayerAvatarSpawnedServerside -= HandlePlayerSpawned;
+                ProgressionPatches.Remove();
                 if (harmony != null)
                     harmony.UnpatchAll(ModId);
             }

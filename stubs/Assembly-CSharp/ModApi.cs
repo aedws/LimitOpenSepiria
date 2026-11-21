@@ -40,6 +40,7 @@ public sealed class ModOptions
     public void SetBool(string key, bool value) { }
     public bool Save() { return false; }
     public ModToggleOption AddToggle(string key, bool defaultValue = false, ModOptionText label = default, Action<bool> onChanged = null) { return null; }
+    public ModSliderOption AddSlider(string key, float min = 0f, float max = 1f, float defaultValue = 0f, float step = 0f, ModOptionText label = default, Action<float> onChanged = null) { return null; }
     public void UnregisterUI() { }
 }
 
@@ -63,4 +64,17 @@ public abstract class ModOption<T> : ModOptionDefinition
 
 public sealed class ModToggleOption : ModOption<bool>
 {
+}
+
+public sealed class ModSliderOption : ModOption<float>
+{
+}
+
+public class PlayerAvatar
+{
+}
+
+public static class HorayModAPI
+{
+    public static event Action<PlayerAvatar> OnPlayerAvatarSpawnedServerside { add { } remove { } }
 }

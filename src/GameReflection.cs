@@ -200,6 +200,27 @@ namespace LimitOpenSepiria
             restores.Add(new Restore(target, field, original));
         }
 
+        /// <summary>게임 언어 코드(예: ko-KR). 알 수 없으면 빈 문자열.</summary>
+        public static string CurrentLanguage()
+        {
+            try
+            {
+                Type manager = FindType("LocalizationManager");
+                if (manager == null)
+                    return "";
+                PropertyInfo instance = manager.GetProperty("Instance", Any);
+                PropertyInfo language = manager.GetProperty("CurrentLanguage", Any);
+                object value = instance != null ? instance.GetValue(null, null) : null;
+                if (IsNull(value) || language == null)
+                    return "";
+                return language.GetValue(value, null) as string ?? "";
+            }
+            catch (Exception)
+            {
+                return "";
+            }
+        }
+
         // Unity 오브젝트는 파괴되거나 비어 있으면 Equals(null) 이 true 가 됩니다.
         public static bool IsNull(object value)
         {
