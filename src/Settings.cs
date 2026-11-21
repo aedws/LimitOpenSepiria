@@ -11,11 +11,13 @@ namespace LimitOpenSepiria
     {
         public const string KeyUnlimitedCapacity = "unlimited_capacity";
         public const string KeyAllItems = "all_items";
+        public const string KeyIncludeOtherTypes = "include_other_types";
         public const string KeyIncludeHidden = "include_hidden";
 
         // 옵션 API를 쓸 수 없을 때의 기본값이기도 합니다.
         public static volatile bool UnlimitedCapacity = true;
         public static volatile bool AllItems = true;
+        public static volatile bool IncludeOtherTypes = false;
         public static volatile bool IncludeHidden = false;
 
         // 옵션 API 타입을 참조하는 코드를 이 메서드에 가둬, 타입이 맞지 않으면 호출부의 try/catch 로 떨어지게 합니다.
@@ -40,13 +42,19 @@ namespace LimitOpenSepiria
                 "소원 분수에서 모든 아이템 선택 / All items selectable in fountain",
                 value => { AllItems = value; Save(options); });
 
+            ModToggleOption otherTypes = options.AddToggle(
+                KeyIncludeOtherTypes, false,
+                "└ 아티팩트 외 종류(포션·석판 등)도 포함 / Include non-artifact items",
+                value => { IncludeOtherTypes = value; Save(options); });
+
             ModToggleOption includeHidden = options.AddToggle(
                 KeyIncludeHidden, false,
-                "└ 숨김·미감정 아이템도 포함 / Include hidden & unidentified items",
+                "└ 숨김·비활성·테스트용 아이템도 포함 / Include hidden, disabled & test items",
                 value => { IncludeHidden = value; Save(options); });
 
             UnlimitedCapacity = capacity != null ? capacity.Value : options.GetBool(KeyUnlimitedCapacity, true);
             AllItems = allItems != null ? allItems.Value : options.GetBool(KeyAllItems, true);
+            IncludeOtherTypes = otherTypes != null ? otherTypes.Value : options.GetBool(KeyIncludeOtherTypes, false);
             IncludeHidden = includeHidden != null ? includeHidden.Value : options.GetBool(KeyIncludeHidden, false);
         }
 

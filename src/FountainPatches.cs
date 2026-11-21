@@ -12,7 +12,20 @@ namespace LimitOpenSepiria
     ///
     /// 공식 API(HorayModAPI)에는 소원 분수에 개입하는 이벤트가 없어 Harmony 로 패치합니다.
     /// 게임 내부 타입은 전부 이름으로 찾아(리플렉션) 접근하므로, 게임 업데이트로 대상이 사라지면
-    /// 해당 기능만 꺼지고 로그에 경고가 남습니다. 게임이 깨지지는 않습니다.
+    /// 해당 기능만 꺼지고 로그에 경고가 남습니다.
+    ///
+    /// 게임의 분수 흐름과 패치 지점:
+    ///  1. StartingFountain / UI_PresetPanel 이 '해금한 아티팩트' 중 조건에 맞는 것만 모아
+    ///     UI_DimensionPocketPanel.Open(…, cachedDimensionPocketItem, …) 으로 넘깁니다.
+    ///       → [OpenPrefix] 그 목록에 게임에 등록된 나머지 아이템을 덧붙입니다.
+    ///  2. OnOpened 가 목록에서 Eternal·아티팩트 외 종류·'분수 선택 불가' 아이템을 걸러 아이콘을 만듭니다.
+    ///       → [Relax] 실행되는 동안만 그 조건을 풀었다가 되돌립니다.
+    ///       → [OnOpenedPostfix] 무기 불일치로 잠긴 아이콘을 풉니다.
+    ///  3. HandleItemClick 이 클릭 시 '보상 불가/선택 불가/숨김'과 용량을 다시 검사합니다.
+    ///       → [Relax] 위와 같습니다.
+    ///  4. 용량은 클라이언트 UI 와 서버 지급(PlayerSpawner.AddDimensionPocketItemsOnServer)이 모두
+    ///     UI_DimensionPocketPanel.GetCapacity(희귀도) 로 계산합니다.
+    ///       → [CapacityPostfix] 결과를 0 으로 만들어 양쪽 계산을 함께 무효화합니다.
     ///
     /// 다른 모드와의 공존:
     ///  - 용량: 다른 모드(예: ModMaker 의 커스텀 희귀도 비용)가 계산한 뒤, 가장 마지막에 결과만 0 으로 덮습니다.
@@ -23,13 +36,17 @@ namespace LimitOpenSepiria
     internal static class FountainPatches
     {
         private const string PanelTypeName = "UI_DimensionPocketPanel";
-        private const string CapacityMethodName = "GetCapacity";
-        private const string OpenMethodName = "Open";
-        private const string PoolParameterName = "cachedDimensionPocketItem";
+        private const string PoolFieldName = "cachedDimensionPocketItem";
 
-        private static Type itemMetadataType;
+        private static FieldInfo poolField;
+        private static FieldInfo weaponCheckField;
+        private static FieldInfo selectedIconsField;
+        private static FieldInfo storageField;
+        private static MethodInfo updateCapacityText;
+        private static MethodInfo sortingIcons;
+
         private static bool loggedOpen;
-        private static bool loggedPoolFailure;
+        private static bool loggedFailure;
 
         public static void Apply(Harmony harmony)
         {
@@ -41,7 +58,7 @@ namespace LimitOpenSepiria
             }
 
             PatchCapacity(harmony, panel);
-            PatchOpen(harmony, panel);
+            PatchItemPool(harmony, panel);
         }
 
         // ───────────────────────── 용량 제한 해제 ─────────────────────────
@@ -49,12 +66,12 @@ namespace LimitOpenSepiria
         private static void PatchCapacity(Harmony harmony, Type panel)
         {
             List<MethodInfo> targets = AccessTools.GetDeclaredMethods(panel)
-                .Where(m => m.Name == CapacityMethodName && m.ReturnType == typeof(int) && !m.IsAbstract && !m.IsGenericMethodDefinition)
+                .Where(m => m.Name == "GetCapacity" && m.ReturnType == typeof(int) && !m.IsAbstract && !m.IsGenericMethodDefinition)
                 .ToList();
 
             if (targets.Count == 0)
             {
-                Log.Warn(PanelTypeName + "." + CapacityMethodName + " 을 찾지 못해 용량 제한 해제를 쓸 수 없습니다.");
+                Log.Warn(PanelTypeName + ".GetCapacity 를 찾지 못해 용량 제한 해제를 쓸 수 없습니다.");
                 return;
             }
 
@@ -75,33 +92,48 @@ namespace LimitOpenSepiria
 
         // ───────────────────────── 모든 아이템 선택 ─────────────────────────
 
-        private static void PatchOpen(Harmony harmony, Type panel)
+        private static void PatchItemPool(Harmony harmony, Type panel)
         {
-            itemMetadataType = GameReflection.FindType("ItemMetadata");
-            if (itemMetadataType == null)
+            string missing;
+            if (!GameReflection.Initialize(out missing))
             {
-                Log.Warn("ItemMetadata 타입을 찾지 못해 '모든 아이템 선택'을 쓸 수 없습니다.");
+                Log.Warn("게임 내부 멤버를 찾지 못해 '모든 아이템 선택'을 쓸 수 없습니다: " + missing);
                 return;
             }
 
-            Type listType = typeof(List<>).MakeGenericType(itemMetadataType);
-            List<MethodInfo> targets = AccessTools.GetDeclaredMethods(panel)
-                .Where(m => m.Name == OpenMethodName && !m.IsAbstract && !m.IsGenericMethodDefinition
-                            && m.GetParameters().Any(p => p.ParameterType == listType))
-                .ToList();
+            Type listType = typeof(List<>).MakeGenericType(GameReflection.ItemMetadataType);
+            MethodInfo open = AccessTools.GetDeclaredMethods(panel).FirstOrDefault(m => m.Name == "Open"
+                && m.GetParameters().Any(p => p.ParameterType == listType && p.Name == PoolFieldName));
+            MethodInfo onOpened = AccessTools.DeclaredMethod(panel, "OnOpened", Type.EmptyTypes);
+            MethodInfo handleItemClick = AccessTools.GetDeclaredMethods(panel).FirstOrDefault(m => m.Name == "HandleItemClick");
 
-            if (targets.Count == 0)
+            poolField = panel.GetField(PoolFieldName, GameReflection.Any);
+            weaponCheckField = panel.GetField("iconCharmWeaponCheckList", GameReflection.Any);
+            selectedIconsField = panel.GetField("selectedVaultIcons", GameReflection.Any);
+            storageField = panel.GetField("cachedDimensionPocketStorage", GameReflection.Any);
+            updateCapacityText = AccessTools.GetDeclaredMethods(panel).FirstOrDefault(m => m.Name == "UpdateCapacityText" && m.GetParameters().Length == 2);
+            sortingIcons = AccessTools.DeclaredMethod(panel, "SortingIcons", Type.EmptyTypes);
+
+            if (open == null || onOpened == null || handleItemClick == null || poolField == null)
             {
-                Log.Warn(PanelTypeName + "." + OpenMethodName + "(…List<ItemMetadata>…) 을 찾지 못해 '모든 아이템 선택'을 쓸 수 없습니다.");
+                Log.Warn("소원 분수 패널의 Open/OnOpened/HandleItemClick 을 찾지 못해 '모든 아이템 선택'을 쓸 수 없습니다.");
                 return;
             }
 
-            var prefix = new HarmonyMethod(typeof(FountainPatches), nameof(OpenPrefix)) { priority = Priority.First };
-            foreach (MethodInfo target in targets)
-            {
-                harmony.Patch(target, prefix: prefix);
-                Log.Info("목록 패치 적용: " + GameReflection.Describe(target));
-            }
+            harmony.Patch(open,
+                prefix: new HarmonyMethod(typeof(FountainPatches), nameof(OpenPrefix)) { priority = Priority.First });
+
+            // 조건을 푸는 쪽은 다른 모드의 패치보다 바깥에서 감싸도록 가장 먼저 시작하고 가장 나중에 되돌립니다.
+            harmony.Patch(onOpened,
+                prefix: new HarmonyMethod(typeof(FountainPatches), nameof(ListingPrefix)) { priority = Priority.First },
+                postfix: new HarmonyMethod(typeof(FountainPatches), nameof(OnOpenedPostfix)),
+                finalizer: new HarmonyMethod(typeof(FountainPatches), nameof(RestoreFinalizer)) { priority = Priority.Last });
+
+            harmony.Patch(handleItemClick,
+                prefix: new HarmonyMethod(typeof(FountainPatches), nameof(ClickPrefix)) { priority = Priority.First },
+                finalizer: new HarmonyMethod(typeof(FountainPatches), nameof(RestoreFinalizer)) { priority = Priority.Last });
+
+            Log.Info("목록 패치 적용: " + GameReflection.Describe(open) + ", OnOpened, HandleItemClick");
         }
 
         // 패널이 열릴 때 넘어오는 '선택 가능 목록'에, 게임(및 다른 모드)에 등록된 나머지 아이템을 덧붙입니다.
@@ -110,58 +142,35 @@ namespace LimitOpenSepiria
             try
             {
                 ParameterInfo[] parameters = __originalMethod.GetParameters();
-                int poolIndex = FindPoolParameter(parameters);
-
-                if (!loggedOpen)
-                {
-                    loggedOpen = true;
-                    Log.Info("소원 분수 열림: " + GameReflection.Describe(__originalMethod) + " / " + DescribeArgs(parameters, __args)
-                             + " / 목록 인자=" + (poolIndex >= 0 ? parameters[poolIndex].Name : "없음"));
-                }
-
-                if (!Settings.AllItems || poolIndex < 0)
+                int poolIndex = Array.FindIndex(parameters, p => p.Name == PoolFieldName);
+                if (poolIndex < 0)
                     return;
 
                 var original = __args[poolIndex] as IList;
+                if (!loggedOpen)
+                {
+                    loggedOpen = true;
+                    Log.Info("소원 분수 열림: 기본 목록 " + (original != null ? original.Count : 0) + "개, 설정: 용량해제="
+                             + Settings.UnlimitedCapacity + ", 모든아이템=" + Settings.AllItems + ", 기타종류="
+                             + Settings.IncludeOtherTypes + ", 숨김=" + Settings.IncludeHidden);
+                }
+
+                if (!Settings.AllItems)
+                    return;
+
                 IList expanded = ExpandPool(parameters[poolIndex].ParameterType, original);
                 if (expanded != null)
                     __args[poolIndex] = expanded;
             }
             catch (Exception e)
             {
-                if (!loggedPoolFailure)
-                {
-                    loggedPoolFailure = true;
-                    Log.Error("'모든 아이템 선택' 처리 중 오류(원래 목록으로 진행합니다): " + e);
-                }
+                LogFailureOnce("목록 확장", e);
             }
         }
 
-        private static int FindPoolParameter(ParameterInfo[] parameters)
-        {
-            Type listType = typeof(List<>).MakeGenericType(itemMetadataType);
-            int fallback = -1;
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                if (parameters[i].ParameterType != listType)
-                    continue;
-                if (string.Equals(parameters[i].Name, PoolParameterName, StringComparison.OrdinalIgnoreCase))
-                    return i;
-                string name = parameters[i].Name ?? "";
-                if (name.IndexOf("cached", StringComparison.OrdinalIgnoreCase) >= 0
-                    || name.IndexOf("pocket", StringComparison.OrdinalIgnoreCase) >= 0)
-                    fallback = i;
-            }
-            return fallback;
-        }
-
-        // 원본 리스트는 세이브 데이터일 수 있으므로 건드리지 않고, 새 리스트를 만들어 넘깁니다.
+        // 호출자가 만든 리스트는 건드리지 않고, 새 리스트를 만들어 넘깁니다.
         private static IList ExpandPool(Type listType, IList original)
         {
-            int[] allIds = GameReflection.GetAllItemIds();
-            if (allIds == null || allIds.Length == 0)
-                return null;
-
             var result = (IList)Activator.CreateInstance(listType);
             var present = new HashSet<int>();
 
@@ -170,26 +179,28 @@ namespace LimitOpenSepiria
                 foreach (object entry in original)
                 {
                     result.Add(entry);
-                    int id;
-                    if (GameReflection.TryGetEntityId(entry, out id))
-                        present.Add(id);
+                    present.Add(GameReflection.GetEntityId(entry));
                 }
             }
 
-            int added = 0;
+            int[] allIds = GameReflection.GetAllItemIds();
             Array.Sort(allIds);
+
+            int added = 0;
             foreach (int id in allIds)
             {
                 if (present.Contains(id))
                     continue;
-                if (!GameReflection.IsSelectableItem(id, Settings.IncludeHidden))
+
+                object entity = GameReflection.FindItem(id);
+                if (entity == null || !GameReflection.HasPrefab(entity))
+                    continue;
+                if (!Settings.IncludeOtherTypes && !GameReflection.IsCharm(entity))
+                    continue;
+                if (!Settings.IncludeHidden && GameReflection.IsHiddenOrDisabled(entity))
                     continue;
 
-                object metadata = GameReflection.CreateItemMetadata(itemMetadataType, id);
-                if (metadata == null)
-                    return null; // 생성 방법을 모르면 원래 목록 그대로 둡니다.
-
-                result.Add(metadata);
+                result.Add(GameReflection.CreateItemMetadata(id));
                 present.Add(id);
                 added++;
             }
@@ -201,20 +212,98 @@ namespace LimitOpenSepiria
             return result;
         }
 
-        private static string DescribeArgs(ParameterInfo[] parameters, object[] args)
+        private static void ListingPrefix(object __instance, out List<GameReflection.Restore> __state)
         {
-            var parts = new List<string>();
-            for (int i = 0; i < parameters.Length && i < args.Length; i++)
+            __state = RelaxPool(__instance, true);
+        }
+
+        private static void ClickPrefix(object __instance, out List<GameReflection.Restore> __state)
+        {
+            __state = RelaxPool(__instance, false);
+        }
+
+        // 원본 메서드가 예외로 끝나도 반드시 되돌립니다. 예외는 그대로 흘려보냅니다.
+        private static void RestoreFinalizer(List<GameReflection.Restore> __state)
+        {
+            if (__state == null)
+                return;
+            for (int i = __state.Count - 1; i >= 0; i--)
             {
-                object arg = args[i];
-                string value;
-                if (arg == null) value = "null";
-                else if (arg is ICollection) value = "Count=" + ((ICollection)arg).Count;
-                else if (arg is int) value = arg.ToString();
-                else value = arg.GetType().Name;
-                parts.Add(parameters[i].Name + "=" + value);
+                try
+                {
+                    __state[i].Apply();
+                }
+                catch (Exception e)
+                {
+                    LogFailureOnce("아이템 조건 복원", e);
+                }
             }
-            return string.Join(", ", parts.ToArray());
+        }
+
+        // 패널이 목록의 아이템을 걸러내는 조건을, 원본 메서드가 도는 동안만 풉니다.
+        private static List<GameReflection.Restore> RelaxPool(object panel, bool forListing)
+        {
+            if (!Settings.AllItems)
+                return null;
+
+            var restores = new List<GameReflection.Restore>();
+            try
+            {
+                var pool = poolField.GetValue(panel) as IList;
+                if (pool == null)
+                    return restores;
+
+                var seen = new HashSet<int>();
+                foreach (object entry in pool)
+                {
+                    int id = GameReflection.GetEntityId(entry);
+                    if (!seen.Add(id))
+                        continue;
+                    object entity = GameReflection.FindItem(id);
+                    if (entity != null)
+                        GameReflection.Relax(entity, forListing, Settings.IncludeOtherTypes, restores);
+                }
+            }
+            catch (Exception e)
+            {
+                LogFailureOnce("아이템 조건 해제", e);
+            }
+            return restores;
+        }
+
+        // 패널은 '현재 무기와 맞지 않는 무기 전용 아티팩트'와 아티팩트가 아닌 아이템을 선택 불가로 표시합니다.
+        // 그 표시를 풀고, 표시를 다시 그리게 합니다.
+        private static void OnOpenedPostfix(object __instance)
+        {
+            if (!Settings.AllItems || weaponCheckField == null)
+                return;
+
+            try
+            {
+                var checks = weaponCheckField.GetValue(__instance) as IDictionary;
+                if (checks == null || checks.Count == 0)
+                    return;
+
+                foreach (object icon in new ArrayList(checks.Keys))
+                    checks[icon] = true;
+
+                if (updateCapacityText != null && selectedIconsField != null && storageField != null)
+                    updateCapacityText.Invoke(__instance, new[] { selectedIconsField.GetValue(__instance), storageField.GetValue(__instance) });
+                if (sortingIcons != null)
+                    sortingIcons.Invoke(__instance, null);
+            }
+            catch (Exception e)
+            {
+                LogFailureOnce("무기 조건 해제", e);
+            }
+        }
+
+        private static void LogFailureOnce(string what, Exception e)
+        {
+            if (loggedFailure)
+                return;
+            loggedFailure = true;
+            Log.Error(what + " 중 오류(이후 같은 오류는 기록하지 않습니다): " + e);
         }
     }
 }

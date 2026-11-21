@@ -9,21 +9,37 @@ namespace LimitOpenSepiria
 {
     /// <summary>
     /// 게임 내부(비공개 API) 타입에 이름으로 접근하는 도우미.
-    /// 실패는 모두 null/false 로 돌려주고, 호출부가 기능을 끄는 쪽으로 처리합니다.
+    /// 게임 1.1.x 의 Assembly-CSharp 을 기준으로 확인한 멤버 이름을 씁니다.
+    /// 찾지 못한 멤버는 null 로 남고, 호출부가 해당 기능을 끄는 쪽으로 처리합니다.
     /// </summary>
     internal static class GameReflection
     {
-        private const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+        public const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
-        // 시작 아이템으로 의미가 없는 종류(미감정 등). '숨김 포함' 옵션이 꺼져 있을 때만 걸러냅니다.
-        private static readonly string[] HiddenItemTypes = { "Identifiable" };
-        private static readonly string[] HiddenFlagNames = { "disabled", "isDisabled", "isHidden", "hidden", "hideInJournal" };
-
+        // ItemDatabase
         private static MethodInfo getAllItemId;
         private static MethodInfo findItemById;
+
+        // ItemMetadata
+        public static Type ItemMetadataType { get; private set; }
         private static ConstructorInfo metadataCtor;
-        private static bool metadataCtorResolved;
-        private static readonly Dictionary<Type, MemberInfo> EntityIdMembers = new Dictionary<Type, MemberInfo>();
+        private static FieldInfo metadataEntityId;
+
+        // ItemEntity
+        private static FieldInfo activeType;
+        private static FieldInfo itemType;
+        private static FieldInfo rarity;
+        private static FieldInfo resourcePrefab;
+        private static FieldInfo cannotSelectInDimensionPocket;
+        private static FieldInfo cannotBeReward;
+
+        private static object activeDefault;
+        private static readonly HashSet<string> HiddenActiveTypes = new HashSet<string> { "Hidden", "Disabled", "TestOnly" };
+        private static object typeCharm;
+        private static object rarityCommon;
+        private static object rarityEternal;
+
+        public static bool Ready { get; private set; }
 
         public static Type FindType(string name)
         {
@@ -38,127 +54,175 @@ namespace LimitOpenSepiria
             return method.DeclaringType.Name + "." + method.Name + "(" + parameters + ")";
         }
 
-        public static int[] GetAllItemIds()
+        /// <summary>아이템 관련 멤버를 한 번에 찾습니다. 하나라도 없으면 false 와 함께 빠진 이름을 돌려줍니다.</summary>
+        public static bool Initialize(out string missing)
         {
-            if (getAllItemId == null)
+            var lost = new List<string>();
+
+            Type database = FindType("ItemDatabase");
+            Type entity = FindType("ItemEntity");
+            ItemMetadataType = FindType("ItemMetadata");
+
+            if (database != null)
             {
-                Type database = FindType("ItemDatabase");
-                if (database == null)
-                    return null;
                 getAllItemId = database.GetMethods(Any).FirstOrDefault(m => m.Name == "GetAllItemID" && m.IsStatic && m.GetParameters().Length == 0);
                 findItemById = database.GetMethods(Any).FirstOrDefault(m => m.Name == "FindItemById" && m.IsStatic
                     && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(int));
-                if (getAllItemId == null)
-                    return null;
             }
+            if (getAllItemId == null) lost.Add("ItemDatabase.GetAllItemID");
+            if (findItemById == null) lost.Add("ItemDatabase.FindItemById");
 
-            object value = getAllItemId.Invoke(null, null);
-            var array = value as int[];
-            if (array != null)
-                return (int[])array.Clone();
-            var sequence = value as IEnumerable<int>;
-            return sequence != null ? sequence.ToArray() : null;
-        }
-
-        public static bool IsSelectableItem(int id, bool includeHidden)
-        {
-            if (findItemById == null)
-                return false;
-
-            object entity = findItemById.Invoke(null, new object[] { id });
-            // Unity 오브젝트는 파괴되면 Equals(null) 이 true 가 됩니다.
-            if (entity == null || entity.Equals(null))
-                return false;
-            if (includeHidden)
-                return true;
-
-            Type type = entity.GetType();
-
-            foreach (string flag in HiddenFlagNames)
+            if (ItemMetadataType != null)
             {
-                object flagValue;
-                if (TryGetMember(type, entity, flag, out flagValue) && flagValue is bool && (bool)flagValue)
-                    return false;
-            }
-
-            object itemType;
-            if (TryGetMember(type, entity, "type", out itemType) && itemType != null
-                && HiddenItemTypes.Contains(itemType.ToString()))
-                return false;
-
-            // 아이콘이 없는 항목은 내부용 더미로 보고 제외합니다.
-            object icon;
-            if (TryGetMember(type, entity, "icon", out icon) && (icon == null || icon.Equals(null)))
-                return false;
-
-            return true;
-        }
-
-        public static bool TryGetEntityId(object metadata, out int id)
-        {
-            id = 0;
-            if (metadata == null)
-                return false;
-
-            Type type = metadata.GetType();
-            MemberInfo member;
-            if (!EntityIdMembers.TryGetValue(type, out member))
-            {
-                member = (MemberInfo)type.GetField("entityID", Any) ?? type.GetProperty("entityID", Any);
-                EntityIdMembers[type] = member;
-            }
-
-            object value = null;
-            var field = member as FieldInfo;
-            var property = member as PropertyInfo;
-            if (field != null) value = field.GetValue(metadata);
-            else if (property != null) value = property.GetValue(metadata, null);
-            if (!(value is int))
-                return false;
-
-            id = (int)value;
-            return true;
-        }
-
-        // 게임에서의 사용 형태: new ItemMetadata(instanceID, entityID, (sbyte)count)
-        public static object CreateItemMetadata(Type metadataType, int entityId)
-        {
-            if (!metadataCtorResolved)
-            {
-                metadataCtorResolved = true;
-                metadataCtor = metadataType.GetConstructors(Any).FirstOrDefault(c =>
+                metadataEntityId = ItemMetadataType.GetField("entityID", Any);
+                metadataCtor = ItemMetadataType.GetConstructors(Any).FirstOrDefault(c =>
                 {
                     ParameterInfo[] p = c.GetParameters();
                     return p.Length == 3 && p[0].ParameterType == typeof(int) && p[1].ParameterType == typeof(int)
                            && p[2].ParameterType == typeof(sbyte);
                 });
-                if (metadataCtor == null)
-                    Log.Warn("ItemMetadata(int, int, sbyte) 생성자를 찾지 못해 '모든 아이템 선택'을 쓸 수 없습니다.");
+            }
+            if (metadataEntityId == null) lost.Add("ItemMetadata.entityID");
+            if (metadataCtor == null) lost.Add("ItemMetadata(int, int, sbyte)");
+
+            if (entity != null)
+            {
+                activeType = entity.GetField("activeType", Any);
+                itemType = entity.GetField("type", Any);
+                rarity = entity.GetField("rarity", Any);
+                resourcePrefab = entity.GetField("resourcePrefab", Any);
+                cannotSelectInDimensionPocket = entity.GetField("cannotSelectInDimensionPocket", Any);
+                cannotBeReward = entity.GetField("cannotBeReward", Any);
+            }
+            if (activeType == null) lost.Add("ItemEntity.activeType");
+            if (itemType == null) lost.Add("ItemEntity.type");
+            if (rarity == null) lost.Add("ItemEntity.rarity");
+            if (resourcePrefab == null) lost.Add("ItemEntity.resourcePrefab");
+            if (cannotSelectInDimensionPocket == null) lost.Add("ItemEntity.cannotSelectInDimensionPocket");
+            if (cannotBeReward == null) lost.Add("ItemEntity.cannotBeReward");
+
+            if (lost.Count == 0)
+            {
+                activeDefault = ParseEnum(activeType.FieldType, "Default", lost);
+                typeCharm = ParseEnum(itemType.FieldType, "Charm", lost);
+                rarityCommon = ParseEnum(rarity.FieldType, "Common", lost);
+                rarityEternal = ParseEnum(rarity.FieldType, "Eternal", lost);
             }
 
-            if (metadataCtor == null)
-                return null;
-            return metadataCtor.Invoke(new object[] { 0, entityId, (sbyte)1 });
+            missing = string.Join(", ", lost.ToArray());
+            Ready = lost.Count == 0;
+            return Ready;
         }
 
-        private static bool TryGetMember(Type type, object instance, string name, out object value)
+        private static object ParseEnum(Type enumType, string name, List<string> lost)
         {
-            value = null;
-            FieldInfo field = type.GetField(name, Any);
-            if (field != null)
+            if (enumType.IsEnum && Enum.IsDefined(enumType, name))
+                return Enum.Parse(enumType, name);
+            lost.Add(enumType.Name + "." + name);
+            return null;
+        }
+
+        public static int[] GetAllItemIds()
+        {
+            object value = getAllItemId.Invoke(null, null);
+            var array = value as int[];
+            if (array != null)
+                return (int[])array.Clone();
+            var sequence = value as IEnumerable<int>;
+            return sequence != null ? sequence.ToArray() : new int[0];
+        }
+
+        public static object FindItem(int id)
+        {
+            object entity = findItemById.Invoke(null, new object[] { id });
+            return IsNull(entity) ? null : entity;
+        }
+
+        public static int GetEntityId(object metadata)
+        {
+            return (int)metadataEntityId.GetValue(metadata);
+        }
+
+        // 게임이 분수 목록에 넣는 형태와 같습니다: new ItemMetadata(-1, entityID, 1)
+        public static object CreateItemMetadata(int entityId)
+        {
+            return metadataCtor.Invoke(new object[] { -1, entityId, (sbyte)1 });
+        }
+
+        public static bool IsCharm(object entity)
+        {
+            return Equals(itemType.GetValue(entity), typeCharm);
+        }
+
+        public static bool IsHiddenOrDisabled(object entity)
+        {
+            object value = activeType.GetValue(entity);
+            return value != null && HiddenActiveTypes.Contains(value.ToString());
+        }
+
+        // 분수 패널은 아이템의 resourcePrefab 을 검사 없이 읽으므로, 없는 아이템은 목록에 넣으면 안 됩니다.
+        public static bool HasPrefab(object entity)
+        {
+            return !IsNull(resourcePrefab.GetValue(entity));
+        }
+
+        /// <summary>
+        /// 분수 패널이 아이템을 걸러내는 조건을 잠시 풀고, 되돌릴 기록을 restores 에 남깁니다.
+        /// forListing 이 true 면 목록 구성(OnOpened)용으로 종류·희귀도 조건까지 풉니다.
+        /// </summary>
+        public static void Relax(object entity, bool forListing, bool allowOtherTypes, List<Restore> restores)
+        {
+            Override(entity, cannotSelectInDimensionPocket, false, restores);
+            Override(entity, cannotBeReward, false, restores);
+
+            object active = activeType.GetValue(entity);
+            if (active != null && active.ToString() == "Hidden")
+                Override(entity, activeType, activeDefault, restores);
+
+            if (!forListing)
+                return;
+
+            // 패널은 Charm(아티팩트) 종류만, 그리고 Eternal 이 아닌 희귀도만 목록에 올립니다.
+            if (allowOtherTypes && !IsCharm(entity))
+                Override(entity, itemType, typeCharm, restores);
+
+            // Eternal 의 용량은 게임에서 Common 과 같은 값(기본 분기)이라, Common 으로 바꿔도 용량 계산은 같습니다.
+            if (Equals(rarity.GetValue(entity), rarityEternal))
+                Override(entity, rarity, rarityCommon, restores);
+        }
+
+        private static void Override(object target, FieldInfo field, object value, List<Restore> restores)
+        {
+            object original = field.GetValue(target);
+            if (Equals(original, value))
+                return;
+            field.SetValue(target, value);
+            restores.Add(new Restore(target, field, original));
+        }
+
+        // Unity 오브젝트는 파괴되거나 비어 있으면 Equals(null) 이 true 가 됩니다.
+        public static bool IsNull(object value)
+        {
+            return value == null || value.Equals(null);
+        }
+
+        internal sealed class Restore
+        {
+            private readonly object target;
+            private readonly FieldInfo field;
+            private readonly object value;
+
+            public Restore(object target, FieldInfo field, object value)
             {
-                value = field.GetValue(field.IsStatic ? null : instance);
-                return true;
+                this.target = target;
+                this.field = field;
+                this.value = value;
             }
 
-            PropertyInfo property = type.GetProperty(name, Any);
-            if (property != null && property.CanRead && property.GetIndexParameters().Length == 0)
+            public void Apply()
             {
-                value = property.GetValue(instance, null);
-                return true;
+                field.SetValue(target, value);
             }
-
-            return false;
         }
     }
 }
