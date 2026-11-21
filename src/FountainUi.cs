@@ -9,7 +9,7 @@ namespace LimitOpenSepiria
 {
     /// <summary>
     /// 소원 분수 화면 안의 모드 UI.
-    ///  - 희귀도/즐겨찾기 버튼 줄에 모드 토글 버튼 2개(용량 해제, 모든 아이템)를 추가합니다.
+    ///  - 희귀도/즐겨찾기 버튼 줄에 모드 토글 버튼(용량 해제, 모든 아이템, 확장 +6, 확장 +12)을 추가합니다.
     ///    게임의 검색 버튼 프리팹을 그대로 복제하므로 모양과 조작이 게임 버튼과 같습니다.
     ///  - 용량 제한 해제가 켜져 있으면 '주머니 용량' 표시를 숨깁니다.
     /// </summary>
@@ -17,11 +17,15 @@ namespace LimitOpenSepiria
     {
         private const string CapacityData = "LIMITOPEN_CAPACITY";
         private const string AllItemsData = "LIMITOPEN_ALLITEMS";
+        private const string Inventory6Data = "LIMITOPEN_INVENTORY6";
+        private const string Inventory12Data = "LIMITOPEN_INVENTORY12";
 
         private sealed class Widgets
         {
             public Component CapacityButton;
             public Component AllItemsButton;
+            public Component Inventory6Button;
+            public Component Inventory12Button;
             public GameObject CapacityDisplay;
             public bool CapacityDisplayResolved;
         }
@@ -116,7 +120,8 @@ namespace LimitOpenSepiria
             if (GameReflection.IsNull(container))
                 return;
 
-            if (GameReflection.IsNull(widgets.CapacityButton) || GameReflection.IsNull(widgets.AllItemsButton))
+            if (GameReflection.IsNull(widgets.CapacityButton) || GameReflection.IsNull(widgets.AllItemsButton)
+                || GameReflection.IsNull(widgets.Inventory6Button) || GameReflection.IsNull(widgets.Inventory12Button))
             {
                 var prefab = prefabField.GetValue(panel) as UnityEngine.Object;
                 if (GameReflection.IsNull(prefab))
@@ -130,10 +135,14 @@ namespace LimitOpenSepiria
 
                 widgets.CapacityButton = CreateButton(panel, prefab, container, Text("용량 해제", "No Limit"), CapacityData, index);
                 widgets.AllItemsButton = CreateButton(panel, prefab, container, Text("모든 아이템", "All Items"), AllItemsData, index < 0 ? -1 : index + 1);
+                widgets.Inventory6Button = CreateButton(panel, prefab, container, Text("확장 +6", "Bag +6"), Inventory6Data, index < 0 ? -1 : index + 2);
+                widgets.Inventory12Button = CreateButton(panel, prefab, container, Text("확장 +12", "Bag +12"), Inventory12Data, index < 0 ? -1 : index + 3);
             }
 
             buttonSetSelected.Invoke(widgets.CapacityButton, new object[] { Settings.UnlimitedCapacity });
             buttonSetSelected.Invoke(widgets.AllItemsButton, new object[] { Settings.AllItems });
+            buttonSetSelected.Invoke(widgets.Inventory6Button, new object[] { Settings.InventoryBonus == 6 });
+            buttonSetSelected.Invoke(widgets.Inventory12Button, new object[] { Settings.InventoryBonus == 12 });
 
             // 게임은 일반 등급 아이템만 있을 때 버튼 줄 전체를 숨깁니다. 모드 버튼은 항상 보여야 합니다.
             container.gameObject.SetActive(true);
@@ -163,6 +172,14 @@ namespace LimitOpenSepiria
                     Settings.SetUnlimitedCapacity(!Settings.UnlimitedCapacity);
                 else if (data == AllItemsData)
                     Settings.SetAllItems(!Settings.AllItems);
+                else if (data == Inventory6Data || data == Inventory12Data)
+                {
+                    // 인벤토리 확장은 둘 중 하나만 켜집니다. 켜진 버튼을 다시 누르면 꺼집니다.
+                    int amount = data == Inventory6Data ? 6 : 12;
+                    Settings.SetInventoryBonus(Settings.InventoryBonus == amount ? 0 : amount);
+                    Sync(panel);
+                    return;
+                }
                 else
                     return;
 

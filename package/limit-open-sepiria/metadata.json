@@ -1,12 +1,12 @@
 {
   "info": {
     "title": {
-      "ko-KR": "소원 분수·재능·과일 꼬치 제한 해제",
-      "en-US": "Limit Open: Fountain, Talents, Fruit Skewer"
+      "ko-KR": "소원 분수·재능·과일 꼬치·인벤토리 제한 해제",
+      "en-US": "Limit Open: Fountain, Talents, Fruit Skewer, Inventory"
     },
     "description": {
-      "ko-KR": "소원 분수의 용량 제한을 해제하고, 미해금·선택 불가·이터널 아티팩트 등 소원 분수에서 고를 수 없던 아이템까지 선택할 수 있게 합니다. 재능 포인트 최대치를 140까지 늘리고 재능별 레벨 상한(20)을 해제할 수 있으며, 과일 꼬치의 드랍률 감소·등장 금지 개수 제한을 없앱니다. 소원 분수·재능·과일 꼬치 화면의 버튼과 게임 옵션 화면의 모드 페이지에서 각 기능을 켜고 끌 수 있습니다. 다른 모드가 추가한 아이템도 자동으로 목록에 포함됩니다.",
-      "en-US": "Removes the Wishing Fountain capacity limit and makes every item selectable there, including locked, fountain-restricted and Eternal artifacts. Raises the talent point cap up to 140, can remove the per-talent level cap of 20, and removes the limit on fruit skewer drop-rate decreases and bans. Each feature can be switched from buttons on the fountain, talent and fruit skewer screens and from the game's options screen. Items added by other mods are included automatically."
+      "ko-KR": "소원 분수의 용량 제한을 해제하고, 미해금·선택 불가·이터널 아티팩트 등 소원 분수에서 고를 수 없던 아이템까지 선택할 수 있게 합니다. 재능 포인트 최대치를 140까지 늘리고 재능별 레벨 상한(20)을 해제할 수 있으며, 과일 꼬치의 드랍률 감소·등장 금지 개수 제한을 없앱니다. 인벤토리를 +6 또는 +12칸 확장할 수 있습니다. 소원 분수·재능·과일 꼬치 화면의 버튼과 게임 옵션 화면의 모드 페이지에서 각 기능을 켜고 끌 수 있습니다. 다른 모드가 추가한 아이템도 자동으로 목록에 포함됩니다.",
+      "en-US": "Removes the Wishing Fountain capacity limit and makes every item selectable there, including locked, fountain-restricted and Eternal artifacts. Raises the talent point cap up to 140, can remove the per-talent level cap of 20, and removes the limit on fruit skewer drop-rate decreases and bans. The inventory can be expanded by +6 or +12 slots. Each feature can be switched from buttons on the fountain, talent and fruit skewer screens and from the game's options screen. Items added by other mods are included automatically."
     },
     "preview": "thumbnail.png"
   },
@@ -17,7 +17,7 @@
   "mod": {
     "schemaVersion": 1,
     "modId": "aedws.limit-open-sepiria",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "author": "aedws",
     "multiplayer": {
       "installation": "everyone"

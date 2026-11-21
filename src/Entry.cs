@@ -44,6 +44,7 @@ namespace LimitOpenSepiria
             {
                 ProgressionPatches.Apply(harmony);
                 ProgressionUi.Apply(harmony);
+                InventoryPatches.Apply();
                 HorayModAPI.OnPlayerAvatarSpawnedServerside += HandlePlayerSpawned;
             }
             catch (Exception e)
@@ -57,6 +58,7 @@ namespace LimitOpenSepiria
         private static void HandlePlayerSpawned(PlayerAvatar player)
         {
             ProgressionPatches.OnPlayerSpawned(player);
+            InventoryPatches.OnPlayerSpawned(player);
         }
 
         protected override void OnModUnloaded()
@@ -65,6 +67,7 @@ namespace LimitOpenSepiria
             {
                 HorayModAPI.OnPlayerAvatarSpawnedServerside -= HandlePlayerSpawned;
                 ProgressionPatches.Remove();
+                InventoryPatches.Remove();
                 if (harmony != null)
                     harmony.UnpatchAll(ModId);
             }

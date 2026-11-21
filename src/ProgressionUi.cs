@@ -223,17 +223,14 @@ namespace LimitOpenSepiria
             });
         }
 
-        // 과일을 많이 고르면 오른쪽 '등장 확률 보너스' 목록과 가운데 꼬치가 화면 밖으로 넘칩니다.
-        // 각각을 스크롤 영역으로 감쌉니다. 한 번 감싸면 화면이 살아 있는 동안 유지됩니다.
+        // 감소·금지를 많이 고르면 오른쪽 '아티팩트 등장 확률 보너스' 목록이 틀 밖으로 넘칩니다.
+        // 그 목록을 스크롤 영역으로 감쌉니다. 한 번 감싸면 화면이 살아 있는 동안 유지됩니다.
         private static void EnsureFruitScroll(object panel)
         {
             Type type = panel.GetType();
             var effects = Field(type, panel, "effectInfoContainer") as Transform;
-            var plus = Field(type, panel, "selectedFruitContainer_Plus") as Transform;
-            var minus = Field(type, panel, "selectedFruitContainer_Minus") as Transform;
 
-            bool allWrapped = ScrollWrap.IsWrapped(effects) && ScrollWrap.IsWrapped(plus) && ScrollWrap.IsWrapped(minus);
-            if (!allWrapped && !loggedFruitLayout)
+            if (!ScrollWrap.IsWrapped(effects) && !loggedFruitLayout)
             {
                 // 배치가 어긋났을 때 원인을 볼 수 있도록, 손대기 전의 화면 구조를 한 번 남깁니다.
                 loggedFruitLayout = true;
@@ -246,15 +243,6 @@ namespace LimitOpenSepiria
                 new ScrollWrap.Obstacle(Field(type, panel, "sapphireBonusEnabledMessageText"), 0f),
                 new ScrollWrap.Obstacle(Field(type, panel, "adaptiveItemDropBonusEnabledMessageObj"), 0f),
             }, "과일 꼬치 효과 목록");
-
-            // 꼬치는 '선택된 과일 n / m' 글자 위에서 끝나게 합니다. 과일 그림은 컨테이너보다 넓으므로 좌우를 넉넉히 둡니다.
-            var skewerLimits = new[]
-            {
-                new ScrollWrap.Obstacle(Field(type, panel, "fruitCountText"), 22f),
-                new ScrollWrap.Obstacle(Field(type, panel, "resetButtonObj"), 0f),
-            };
-            ScrollWrap.Wrap(plus, 80f, skewerLimits, "과일 꼬치(증가)");
-            ScrollWrap.Wrap(minus, 80f, skewerLimits, "과일 꼬치(감소)");
         }
 
         private static object Field(Type type, object instance, string name)

@@ -40,6 +40,7 @@ public sealed class ModOptions
     public void SetBool(string key, bool value) { }
     public bool Save() { return false; }
     public ModToggleOption AddToggle(string key, bool defaultValue = false, ModOptionText label = default, Action<bool> onChanged = null) { return null; }
+    public ModSelectionOption AddSelectionBox(string key, string[] choices, int defaultValue = 0, ModOptionText label = default, Action<int> onChanged = null) { return null; }
     public ModSliderOption AddSlider(string key, float min = 0f, float max = 1f, float defaultValue = 0f, float step = 0f, ModOptionText label = default, Action<float> onChanged = null) { return null; }
     public void UnregisterUI() { }
 }
@@ -63,6 +64,10 @@ public abstract class ModOption<T> : ModOptionDefinition
 }
 
 public sealed class ModToggleOption : ModOption<bool>
+{
+}
+
+public sealed class ModSelectionOption : ModOption<int>
 {
 }
 

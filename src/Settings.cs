@@ -18,6 +18,10 @@ namespace LimitOpenSepiria
         private const string KeyTalentPoints = "talent_points";
         private const string KeyUnlimitedFruitBans = "unlimited_fruit_bans";
         private const string KeyUnlimitedTalentLevel = "unlimited_talent_level";
+        private const string KeyInventoryBonus = "inventory_bonus";
+
+        /// <summary>고를 수 있는 인벤토리 확장 칸 수. 옵션 화면 선택 상자의 순서와 같습니다.</summary>
+        public static readonly int[] InventoryBonusChoices = { 0, 6, 12 };
 
         // 옵션 API를 쓸 수 없을 때의 기본값이기도 합니다.
         public static volatile bool UnlimitedCapacity = true;
@@ -33,6 +37,14 @@ namespace LimitOpenSepiria
 
         /// <summary>재능 하나에 찍을 수 있는 레벨 상한(게임 기본 20)을 해제합니다.</summary>
         public static volatile bool UnlimitedTalentLevel = false;
+
+        /// <summary>인벤토리에 더할 칸 수(0, 6, 12).</summary>
+        public static volatile int InventoryBonus = 0;
+
+        /// <summary>인벤토리 확장 설정이 바뀌면 호출됩니다.</summary>
+        public static Action InventoryBonusChanged;
+
+        private static Action<int> setInventoryBonus;
 
         /// <summary>재능 포인트 설정이 바뀌면 호출됩니다.</summary>
         public static Action TalentPointsChanged;
@@ -108,6 +120,21 @@ namespace LimitOpenSepiria
                         changed();
                 });
 
+            ModSelectionOption inventory = options.AddSelectionBox(
+                KeyInventoryBonus, new[] { "끔 / Off", "+6", "+12" }, 0,
+                "인벤토리 확장 / Inventory expansion",
+                index =>
+                {
+                    InventoryBonus = InventoryBonusChoices[ChoiceIndex(index)];
+                    Save(options);
+                    Action changed = InventoryBonusChanged;
+                    if (changed != null)
+                        changed();
+                });
+
+            InventoryBonus = InventoryBonusChoices[ChoiceIndex(inventory.Value)];
+            setInventoryBonus = value => inventory.Value = Math.Max(0, Array.IndexOf(InventoryBonusChoices, value));
+
             UnlimitedTalentLevel = talentLevel.Value;
             setUnlimitedTalentLevel = value => talentLevel.Value = value;
             setTalentPoints = value => talent.Value = value;
@@ -149,6 +176,27 @@ namespace LimitOpenSepiria
             Action changed = TalentPointsChanged;
             if (changed != null)
                 changed();
+        }
+
+        /// <summary>value 는 0, 6, 12 중 하나.</summary>
+        public static void SetInventoryBonus(int value)
+        {
+            if (Array.IndexOf(InventoryBonusChoices, value) < 0)
+                value = 0;
+            if (setInventoryBonus != null)
+            {
+                setInventoryBonus(value);
+                return;
+            }
+            InventoryBonus = value;
+            Action changed = InventoryBonusChanged;
+            if (changed != null)
+                changed();
+        }
+
+        private static int ChoiceIndex(int index)
+        {
+            return index < 0 || index >= InventoryBonusChoices.Length ? 0 : index;
         }
 
         public static void SetUnlimitedFruitBans(bool value)
