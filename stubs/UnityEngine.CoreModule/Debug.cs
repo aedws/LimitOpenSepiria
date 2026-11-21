@@ -35,4 +35,25 @@ namespace UnityEngine
         public bool activeSelf { get { return false; } }
         public void SetActive(bool value) { }
     }
+
+    public struct Vector2
+    {
+        public float x;
+        public float y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+    }
+
+    public sealed class RectTransform : Transform
+    {
+        public Vector2 anchorMin { get { return default; } set { } }
+        public Vector2 anchorMax { get { return default; } set { } }
+        public Vector2 pivot { get { return default; } set { } }
+        public Vector2 anchoredPosition { get { return default; } set { } }
+        public Vector2 sizeDelta { get { return default; } set { } }
+    }
+}
+
+namespace UnityEngine.Events
+{
+    public delegate void UnityAction();
 }

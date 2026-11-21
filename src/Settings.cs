@@ -18,6 +18,7 @@ namespace LimitOpenSepiria
         private const string KeyIncludeHidden = "include_hidden";
         private const string KeyTalentPoints = "talent_points";
         private const string KeyFruitSkewer = "fruit_skewer";
+        private const string KeyUnlimitedTalentLevel = "unlimited_talent_level";
 
         // 옵션 API를 쓸 수 없을 때의 기본값이기도 합니다.
         public static volatile bool UnlimitedCapacity = true;
@@ -31,8 +32,18 @@ namespace LimitOpenSepiria
         /// <summary>과일 꼬치 최대 개수. 게임이 준 개수보다 작으면(0 포함) 게임 값을 그대로 씁니다.</summary>
         public static volatile int FruitSkewer = FruitSkewerLimit;
 
+        /// <summary>재능 하나에 찍을 수 있는 레벨 상한(게임 기본 20)을 해제합니다.</summary>
+        public static volatile bool UnlimitedTalentLevel = false;
+
         /// <summary>재능 포인트 설정이 바뀌면 호출됩니다.</summary>
         public static Action TalentPointsChanged;
+
+        /// <summary>재능 레벨 상한 설정이 바뀌면 호출됩니다.</summary>
+        public static Action TalentLevelCapChanged;
+
+        private static Action<int> setTalentPoints;
+        private static Action<int> setFruitSkewer;
+        private static Action<bool> setUnlimitedTalentLevel;
 
         private static Action<bool> setUnlimitedCapacity;
         private static Action<bool> setAllItems;
@@ -86,6 +97,23 @@ namespace LimitOpenSepiria
                 "과일 꼬치 최대 개수 (0 = 게임 기본) / Max fruit skewer picks (0 = game default)",
                 value => { FruitSkewer = ToInt(value, FruitSkewerLimit); Save(options); });
 
+            ModToggleOption talentLevel = options.AddToggle(
+                KeyUnlimitedTalentLevel, false,
+                "재능별 레벨 상한(20) 해제 / Remove per-talent level cap (20)",
+                value =>
+                {
+                    UnlimitedTalentLevel = value;
+                    Save(options);
+                    Action changed = TalentLevelCapChanged;
+                    if (changed != null)
+                        changed();
+                });
+
+            UnlimitedTalentLevel = talentLevel.Value;
+            setUnlimitedTalentLevel = value => talentLevel.Value = value;
+            setTalentPoints = value => talent.Value = value;
+            setFruitSkewer = value => fruit.Value = value;
+
             UnlimitedCapacity = capacity.Value;
             AllItems = allItems.Value;
             IncludeOtherTypes = otherTypes.Value;
@@ -108,6 +136,40 @@ namespace LimitOpenSepiria
         {
             if (setAllItems != null) setAllItems(value);
             else AllItems = value;
+        }
+
+        public static void SetTalentPoints(int value)
+        {
+            value = ToInt(value, TalentPointLimit);
+            if (setTalentPoints != null)
+            {
+                setTalentPoints(value);
+                return;
+            }
+            TalentPoints = value;
+            Action changed = TalentPointsChanged;
+            if (changed != null)
+                changed();
+        }
+
+        public static void SetFruitSkewer(int value)
+        {
+            value = ToInt(value, FruitSkewerLimit);
+            if (setFruitSkewer != null) setFruitSkewer(value);
+            else FruitSkewer = value;
+        }
+
+        public static void SetUnlimitedTalentLevel(bool value)
+        {
+            if (setUnlimitedTalentLevel != null)
+            {
+                setUnlimitedTalentLevel(value);
+                return;
+            }
+            UnlimitedTalentLevel = value;
+            Action changed = TalentLevelCapChanged;
+            if (changed != null)
+                changed();
         }
 
         private static int ToInt(float value, int limit)

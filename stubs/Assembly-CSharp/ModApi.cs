@@ -77,4 +77,16 @@ public class PlayerAvatar
 public static class HorayModAPI
 {
     public static event Action<PlayerAvatar> OnPlayerAvatarSpawnedServerside { add { } remove { } }
+    public static bool TryGetUIWidgets(out UIWidgetFactory widgets) { widgets = null; return false; }
+}
+
+public class UI_HorayButton : UnityEngine.Component
+{
+}
+
+public sealed class UIWidgetFactory
+{
+    public UnityEngine.RectTransform CreateHorizontalLayout(UnityEngine.Transform parent, float spacing = 4f) { return null; }
+    public UI_HorayButton CreateButton(UnityEngine.Transform parent, string label, UnityEngine.Events.UnityAction onClick) { return null; }
+    public static void SetPreferredSize(UnityEngine.Component widget, float width, float height, float flexibleHeight = 0f) { }
 }

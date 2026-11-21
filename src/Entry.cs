@@ -43,6 +43,7 @@ namespace LimitOpenSepiria
             try
             {
                 ProgressionPatches.Apply(harmony);
+                ProgressionUi.Apply(harmony);
                 HorayModAPI.OnPlayerAvatarSpawnedServerside += HandlePlayerSpawned;
             }
             catch (Exception e)

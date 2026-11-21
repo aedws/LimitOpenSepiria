@@ -38,8 +38,19 @@ namespace LimitOpenSepiria
         private static bool talentReady;
         private static bool disabled;
 
+        // 재능별 레벨 상한: 원래 값을 기억해 두었다가 되돌립니다.
+        private const int LiftedLevelCap = 9999;
+        private static FieldInfo passiveData;
+        private static FieldInfo passiveMaxLevel;
+        private static readonly System.Collections.Generic.Dictionary<object, int> OriginalMaxLevels = new System.Collections.Generic.Dictionary<object, int>();
+
+        private static MethodInfo fruitMaxGetter;
+
         [ThreadStatic]
         private static bool adjusting;
+
+        [ThreadStatic]
+        private static bool bypassFruit;
 
         [ThreadStatic]
         private static int readingFruitMax;
@@ -58,7 +69,9 @@ namespace LimitOpenSepiria
         {
             disabled = true;
             Settings.TalentPointsChanged = null;
+            Settings.TalentLevelCapChanged = null;
             ApplyToAllPlayers();
+            ApplyLevelCap();
             talentReady = false;
         }
 
@@ -88,9 +101,101 @@ namespace LimitOpenSepiria
             }
 
             harmony.Patch(setter, postfix: new HarmonyMethod(typeof(ProgressionPatches), nameof(MaxPointSetterPostfix)));
+            PatchLevelCap(harmony, avatar);
             talentReady = true;
             Settings.TalentPointsChanged = ApplyToAllPlayers;
             Log.Info("재능 포인트 패치 적용 (최대치 설정 " + Settings.TalentPoints + ")");
+        }
+
+        // 재능 하나의 레벨 상한은 서버가 포인트를 더할 때 PassiveEntity.maxLevel(기본 20)로만 검사합니다.
+        // 효과는 '레벨 × 기본값'으로 계산되므로 상한을 올려도 계산에는 문제가 없습니다.
+        private static void PatchLevelCap(Harmony harmony, Type avatar)
+        {
+            Type database = GameReflection.FindType("PassiveDatabase");
+            Type entity = GameReflection.FindType("PassiveEntity");
+            passiveData = database != null ? database.GetField("data", GameReflection.Any) : null;
+            passiveMaxLevel = entity != null ? entity.GetField("maxLevel", GameReflection.Any) : null;
+            MethodInfo addOnServer = AccessTools.GetDeclaredMethods(avatar).FirstOrDefault(m => m.Name == "AddPassiveStatOnServer");
+
+            if (passiveData == null || passiveMaxLevel == null || addOnServer == null)
+            {
+                Log.Warn("재능 레벨 상한 검사를 찾지 못해 레벨 상한 해제를 쓸 수 없습니다.");
+                passiveData = null;
+                return;
+            }
+
+            // 저장된 재능을 불러올 때도 이 함수를 거치므로, 실행 직전에 상한을 설정에 맞춰 둡니다.
+            harmony.Patch(addOnServer, prefix: new HarmonyMethod(typeof(ProgressionPatches), nameof(ApplyLevelCap)));
+            Settings.TalentLevelCapChanged = ApplyLevelCap;
+        }
+
+        public static void ApplyLevelCap()
+        {
+            if (passiveData == null)
+                return;
+            try
+            {
+                var data = passiveData.GetValue(null) as IDictionary;
+                if (data == null)
+                    return;
+                bool lift = !disabled && Settings.UnlimitedTalentLevel;
+                foreach (object entity in data.Values)
+                {
+                    if (GameReflection.IsNull(entity))
+                        continue;
+                    int current = (int)passiveMaxLevel.GetValue(entity);
+                    int original;
+                    if (!OriginalMaxLevels.TryGetValue(entity, out original))
+                    {
+                        if (!lift)
+                            continue;
+                        original = current;
+                        OriginalMaxLevels[entity] = original;
+                    }
+                    int wanted = lift ? Math.Max(original, LiftedLevelCap) : original;
+                    if (current != wanted)
+                        passiveMaxLevel.SetValue(entity, wanted);
+                }
+            }
+            catch (Exception e)
+            {
+                LogFailureOnce("재능 레벨 상한 적용", e);
+            }
+        }
+
+        /// <summary>이 모드의 보너스를 뺀, 게임이 준 재능 포인트 최대치.</summary>
+        public static int VanillaTalentMax(object avatar)
+        {
+            int current = (int)maxPassivePoint.GetValue(avatar);
+            Bonus bonus;
+            return Bonuses.TryGetValue(avatar, out bonus) ? current - bonus.Value : current;
+        }
+
+        public static int CurrentTalentMax(object avatar)
+        {
+            return (int)maxPassivePoint.GetValue(avatar);
+        }
+
+        public static bool CanAdjustTalent(object avatar)
+        {
+            return talentReady && !GameReflection.IsNull(avatar) && (bool)isServer.GetValue(avatar, null);
+        }
+
+        /// <summary>과일 꼬치 화면의 최대 개수. vanilla 가 true 면 이 모드의 설정을 뺀 게임 원래 값.</summary>
+        public static int FruitMax(object panel, bool vanilla)
+        {
+            if (fruitMaxGetter == null)
+                return 0;
+            bool previous = bypassFruit;
+            bypassFruit = vanilla;
+            try
+            {
+                return (int)fruitMaxGetter.Invoke(panel, null);
+            }
+            finally
+            {
+                bypassFruit = previous;
+            }
         }
 
         // 게임이 최대치를 바꾼 직후(나무 상점 구매, 하드 모드 보상 등) 보너스를 다시 맞춥니다.
@@ -181,6 +286,7 @@ namespace LimitOpenSepiria
                 return;
             }
 
+            fruitMaxGetter = maxGetter;
             harmony.Patch(getConst, postfix: new HarmonyMethod(typeof(ProgressionPatches), nameof(ConstValuePostfix)) { priority = Priority.Last });
             harmony.Patch(maxGetter,
                 prefix: new HarmonyMethod(typeof(ProgressionPatches), nameof(FruitMaxPrefix)),
@@ -192,7 +298,7 @@ namespace LimitOpenSepiria
         // 서버 적용과 프리셋 화면이 쓰는 상수. 여기에 플레이어 스탯이 더해지므로 상한은 설정값 이상이 됩니다.
         private static void ConstValuePostfix(string key, ref int __result)
         {
-            if (readingFruitMax > 0 || key == null || key.Length != FruitConstKey.Length)
+            if (bypassFruit || readingFruitMax > 0 || key == null || key.Length != FruitConstKey.Length)
                 return;
             int wanted = Settings.FruitSkewer;
             if (wanted > __result && string.Equals(key, FruitConstKey, StringComparison.OrdinalIgnoreCase))
@@ -207,7 +313,7 @@ namespace LimitOpenSepiria
 
         private static void FruitMaxPostfix(ref int __result)
         {
-            if (Settings.FruitSkewer > __result)
+            if (!bypassFruit && Settings.FruitSkewer > __result)
                 __result = Settings.FruitSkewer;
         }
 
