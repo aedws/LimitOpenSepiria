@@ -18,9 +18,13 @@ namespace LimitOpenSepiria
     ///   값은 게임이 원래 동기화하는 변수라 재능 탭·프리셋 화면에 그대로 표시됩니다.
     ///
     /// 과일 꼬치:
-    ///   최대 개수는 세 곳(과일 꼬치 화면, 런 시작 시 서버 적용, 프리셋 화면)에서
-    ///   '상수 fruitSkewerDefaultCount + 플레이어의 FRUITCOUNT 스탯'으로 계산됩니다.
-    ///   상수를 설정값으로 올리고, 과일 꼬치 화면의 최대치는 정확히 설정값이 되게 맞춥니다.
+    ///   카테고리마다 플러스 과일(드랍률 증가)과 마이너스 과일(드랍률 감소, 겹치면 등장 금지)을 고르는데,
+    ///   게임은 둘을 합친 개수를 '상수 fruitSkewerDefaultCount + 플레이어의 FRUITCOUNT 스탯'으로 제한합니다.
+    ///   이 모드는 마이너스 과일을 그 개수에서 빼 줍니다. 플러스 과일의 개수 제한과,
+    ///   카테고리 하나에 겹칠 수 있는 횟수 제한은 그대로입니다.
+    ///     - 과일 꼬치 화면: 최대 개수를 '게임 값 + 고른 마이너스 과일 수'로 돌려줍니다.
+    ///     - 런 시작 시 서버 적용(DungeonManager.LoadStageAndMove)과 프리셋 화면: 앞에서부터 최대 개수만큼만
+    ///       적용/표시하므로, 그 계산 동안만 상수를 크게 돌려줘 고른 과일이 모두 적용되게 합니다.
     /// </summary>
     internal static class ProgressionPatches
     {
@@ -49,11 +53,27 @@ namespace LimitOpenSepiria
         [ThreadStatic]
         private static bool adjusting;
 
-        [ThreadStatic]
-        private static bool bypassFruit;
 
         [ThreadStatic]
         private static int readingFruitMax;
+
+        [ThreadStatic]
+        private static int applyingFruits;
+
+        [ThreadStatic]
+        private static bool addingMinusFruit;
+
+        private const int FruitConstBoost = 10000;
+        private static MethodInfo getConstValue;
+        private static FieldInfo fruitSelected;
+        private static FieldInfo fruitDataValue;
+        private static FieldInfo fruitIcons;
+        private static FieldInfo fruitPlusCounts;
+        private static FieldInfo fruitMinusCounts;
+        private static FieldInfo iconPlusButton;
+        private static FieldInfo iconMinusButton;
+        private static MethodInfo iconSetLimitMessageBox;
+        private static PropertyInfo buttonInteractable;
 
         private static bool loggedFailure;
 
@@ -181,23 +201,6 @@ namespace LimitOpenSepiria
             return talentReady && !GameReflection.IsNull(avatar) && (bool)isServer.GetValue(avatar, null);
         }
 
-        /// <summary>과일 꼬치 화면의 최대 개수. vanilla 가 true 면 이 모드의 설정을 뺀 게임 원래 값.</summary>
-        public static int FruitMax(object panel, bool vanilla)
-        {
-            if (fruitMaxGetter == null)
-                return 0;
-            bool previous = bypassFruit;
-            bypassFruit = vanilla;
-            try
-            {
-                return (int)fruitMaxGetter.Invoke(panel, null);
-            }
-            finally
-            {
-                bypassFruit = previous;
-            }
-        }
-
         // 게임이 최대치를 바꾼 직후(나무 상점 구매, 하드 모드 보상 등) 보너스를 다시 맞춥니다.
         private static void MaxPointSetterPostfix(object __instance)
         {
@@ -272,55 +275,190 @@ namespace LimitOpenSepiria
         {
             Type keywords = GameReflection.FindType("KeywordDatabase");
             Type panel = GameReflection.FindType("UI_FruitSkewerPanel");
+            Type icon = GameReflection.FindType("UI_FruitSkewerCategoryIcon");
+            Type dungeon = GameReflection.FindType("DungeonManager");
+            Type preset = GameReflection.FindType("UI_PresetPanel");
 
-            MethodInfo getConst = keywords != null
+            getConstValue = keywords != null
                 ? AccessTools.GetDeclaredMethods(keywords).FirstOrDefault(m => m.Name == "GetConstValue" && m.ReturnType == typeof(int)
-                    && m.GetParameters().Length >= 1 && m.GetParameters()[0].ParameterType == typeof(string) && m.GetParameters()[0].Name == "key")
+                    && m.GetParameters().Length == 2 && m.GetParameters()[0].ParameterType == typeof(string) && m.GetParameters()[0].Name == "key")
                 : null;
             PropertyInfo maxProperty = panel != null ? panel.GetProperty("MaxSelectedFruitCount", GameReflection.Any) : null;
-            MethodInfo maxGetter = maxProperty != null ? maxProperty.GetGetMethod(true) : null;
+            fruitMaxGetter = maxProperty != null ? maxProperty.GetGetMethod(true) : null;
+            MethodInfo addFruit = panel != null ? AccessTools.GetDeclaredMethods(panel).FirstOrDefault(m => m.Name == "AddFruit"
+                && m.GetParameters().Length == 3 && m.GetParameters()[1].Name == "value") : null;
+            MethodInfo refresh = panel != null ? AccessTools.DeclaredMethod(panel, "RefreshCategoryButtonLockState", Type.EmptyTypes) : null;
+            MethodInfo applyOnServer = dungeon != null ? AccessTools.GetDeclaredMethods(dungeon).FirstOrDefault(m => m.Name == "LoadStageAndMove") : null;
+            MethodInfo presetInfo = preset != null ? AccessTools.GetDeclaredMethods(preset).FirstOrDefault(m => m.Name == "UpdateFruitSkewerInfo") : null;
 
-            if (getConst == null || maxGetter == null)
+            if (panel != null)
             {
-                Log.Warn("과일 꼬치 최대 개수 계산을 찾지 못해 과일 꼬치 개수를 바꿀 수 없습니다.");
+                fruitSelected = panel.GetField("selectedFruitDataPairList", GameReflection.Any);
+                fruitIcons = panel.GetField("fruitIconList", GameReflection.Any);
+                fruitPlusCounts = panel.GetField("categoryPlusSelectedCount", GameReflection.Any);
+                fruitMinusCounts = panel.GetField("categoryMinusSelectedCount", GameReflection.Any);
+                Type data = panel.GetNestedType("FruitData", GameReflection.Any);
+                fruitDataValue = data != null ? data.GetField("value", GameReflection.Any) : null;
+            }
+            if (icon != null)
+            {
+                iconPlusButton = icon.GetField("plusButton", GameReflection.Any);
+                iconMinusButton = icon.GetField("minusButton", GameReflection.Any);
+                iconSetLimitMessageBox = AccessTools.GetDeclaredMethods(icon).FirstOrDefault(m => m.Name == "SetLimitMessageBox");
+                buttonInteractable = iconMinusButton != null
+                    ? iconMinusButton.FieldType.GetProperty("interactable", BindingFlags.Public | BindingFlags.Instance) : null;
+            }
+
+            if (getConstValue == null || fruitMaxGetter == null || addFruit == null || refresh == null || applyOnServer == null
+                || fruitSelected == null || fruitDataValue == null || fruitIcons == null || fruitPlusCounts == null || fruitMinusCounts == null
+                || iconMinusButton == null || buttonInteractable == null)
+            {
+                Log.Warn("과일 꼬치 화면의 구성 요소를 찾지 못해 감소·금지 개수 제한 해제를 쓸 수 없습니다.");
+                fruitMaxGetter = null;
                 return;
             }
 
-            fruitMaxGetter = maxGetter;
-            harmony.Patch(getConst, postfix: new HarmonyMethod(typeof(ProgressionPatches), nameof(ConstValuePostfix)) { priority = Priority.Last });
-            harmony.Patch(maxGetter,
+            harmony.Patch(getConstValue, postfix: new HarmonyMethod(typeof(ProgressionPatches), nameof(ConstValuePostfix)) { priority = Priority.Last });
+            harmony.Patch(fruitMaxGetter,
                 prefix: new HarmonyMethod(typeof(ProgressionPatches), nameof(FruitMaxPrefix)),
                 postfix: new HarmonyMethod(typeof(ProgressionPatches), nameof(FruitMaxPostfix)),
                 finalizer: new HarmonyMethod(typeof(ProgressionPatches), nameof(FruitMaxFinalizer)));
-            Log.Info("과일 꼬치 패치 적용 (최대 개수 설정 " + Settings.FruitSkewer + ")");
+            harmony.Patch(addFruit,
+                prefix: new HarmonyMethod(typeof(ProgressionPatches), nameof(AddFruitPrefix)),
+                finalizer: new HarmonyMethod(typeof(ProgressionPatches), nameof(MinusFlagFinalizer)));
+            harmony.Patch(refresh,
+                prefix: new HarmonyMethod(typeof(ProgressionPatches), nameof(RefreshLockPrefix)),
+                postfix: new HarmonyMethod(typeof(ProgressionPatches), nameof(RefreshLockPostfix)),
+                finalizer: new HarmonyMethod(typeof(ProgressionPatches), nameof(MinusFlagFinalizer)));
+
+            var scopePrefix = new HarmonyMethod(typeof(ProgressionPatches), nameof(ApplyScopePrefix));
+            var scopeFinalizer = new HarmonyMethod(typeof(ProgressionPatches), nameof(ApplyScopeFinalizer));
+            harmony.Patch(applyOnServer, prefix: scopePrefix, finalizer: scopeFinalizer);
+            if (presetInfo != null)
+                harmony.Patch(presetInfo, prefix: scopePrefix, finalizer: scopeFinalizer);
+
+            Log.Info("과일 꼬치 패치 적용 (감소·금지 제한 해제=" + Settings.UnlimitedFruitBans + ")");
         }
 
-        // 서버 적용과 프리셋 화면이 쓰는 상수. 여기에 플레이어 스탯이 더해지므로 상한은 설정값 이상이 됩니다.
+        public static bool FruitReady { get { return fruitMaxGetter != null; } }
+
+        // 서버 적용과 프리셋 화면이 과일을 세는 동안에만 상수를 크게 돌려줍니다.
+        private static void ApplyScopePrefix()
+        {
+            applyingFruits++;
+        }
+
+        private static void ApplyScopeFinalizer()
+        {
+            if (applyingFruits > 0)
+                applyingFruits--;
+        }
+
         private static void ConstValuePostfix(string key, ref int __result)
         {
-            if (bypassFruit || readingFruitMax > 0 || key == null || key.Length != FruitConstKey.Length)
+            if (applyingFruits <= 0 || readingFruitMax > 0 || !Settings.UnlimitedFruitBans || key == null || key.Length != FruitConstKey.Length)
                 return;
-            int wanted = Settings.FruitSkewer;
-            if (wanted > __result && string.Equals(key, FruitConstKey, StringComparison.OrdinalIgnoreCase))
-                __result = wanted;
+            if (string.Equals(key, FruitConstKey, StringComparison.OrdinalIgnoreCase))
+                __result += FruitConstBoost;
         }
 
-        // 과일 꼬치 화면의 최대치는 게임 원래 값을 구한 뒤, 설정값과 비교해 큰 쪽으로 정합니다.
+        // 과일 꼬치 화면의 최대 개수 = 게임 값 + 고른 마이너스 과일 수.
+        // 마이너스 과일을 추가하는 중에는 한 칸을 더 열어, 플러스가 가득 차 있어도 추가되게 합니다.
         private static void FruitMaxPrefix()
         {
             readingFruitMax++;
         }
 
-        private static void FruitMaxPostfix(ref int __result)
+        private static void FruitMaxPostfix(object __instance, ref int __result)
         {
-            if (!bypassFruit && Settings.FruitSkewer > __result)
-                __result = Settings.FruitSkewer;
+            if (!Settings.UnlimitedFruitBans)
+                return;
+            try
+            {
+                __result += CountMinusFruits(__instance) + (addingMinusFruit ? 1 : 0);
+            }
+            catch (Exception e)
+            {
+                LogFailureOnce("과일 꼬치 개수 계산", e);
+            }
         }
 
         private static void FruitMaxFinalizer()
         {
             if (readingFruitMax > 0)
                 readingFruitMax--;
+        }
+
+        private static int CountMinusFruits(object panel)
+        {
+            var selected = fruitSelected.GetValue(panel) as IDictionary;
+            if (selected == null)
+                return 0;
+            int count = 0;
+            foreach (object data in selected.Keys)
+            {
+                if (data != null && (int)fruitDataValue.GetValue(data) < 0)
+                    count++;
+            }
+            return count;
+        }
+
+        private static void AddFruitPrefix(int value, out bool __state)
+        {
+            __state = addingMinusFruit;
+            addingMinusFruit = value < 0 && Settings.UnlimitedFruitBans;
+        }
+
+        // 버튼 잠금 상태는 '추가 중' 표시 없이 계산해야 플러스 쪽 잠금이 게임과 같게 나옵니다.
+        private static void RefreshLockPrefix(out bool __state)
+        {
+            __state = addingMinusFruit;
+            addingMinusFruit = false;
+        }
+
+        private static void MinusFlagFinalizer(bool __state)
+        {
+            addingMinusFruit = __state;
+        }
+
+        // 게임은 전체 개수가 가득 차면 마이너스 버튼까지 잠급니다. 마이너스 버튼은 그 카테고리에
+        // 더 겹칠 수 있으면(또는 플러스 과일을 상쇄할 수 있으면) 항상 누를 수 있게 되돌립니다.
+        private static void RefreshLockPostfix(object __instance)
+        {
+            if (!Settings.UnlimitedFruitBans)
+                return;
+            try
+            {
+                var icons = fruitIcons.GetValue(__instance) as IDictionary;
+                var plus = fruitPlusCounts.GetValue(__instance) as System.Collections.Generic.Dictionary<string, int>;
+                var minus = fruitMinusCounts.GetValue(__instance) as System.Collections.Generic.Dictionary<string, int>;
+                if (icons == null || plus == null || minus == null)
+                    return;
+
+                int minusLimit = (int)getConstValue.Invoke(null, new object[] { "fruitSkewerMinusLimitCount", true });
+                int plusLimit = (int)getConstValue.Invoke(null, new object[] { "fruitSkewerPlusLimitCount", true });
+                foreach (DictionaryEntry entry in icons)
+                {
+                    var category = entry.Key as string;
+                    if (category == null || GameReflection.IsNull(entry.Value))
+                        continue;
+                    int plusCount, minusCount;
+                    plus.TryGetValue(category, out plusCount);
+                    minus.TryGetValue(category, out minusCount);
+
+                    object button = iconMinusButton.GetValue(entry.Value);
+                    if (!GameReflection.IsNull(button))
+                        buttonInteractable.SetValue(button, minusCount < minusLimit || plusCount > 0, null);
+
+                    // '한도' 표시는 이 카테고리가 겹침 한도에 닿았을 때만 남깁니다.
+                    if (iconSetLimitMessageBox != null)
+                        iconSetLimitMessageBox.Invoke(entry.Value, new object[] { plusCount >= plusLimit || minusCount >= minusLimit });
+                }
+            }
+            catch (Exception e)
+            {
+                LogFailureOnce("과일 꼬치 버튼 잠금 조정", e);
+            }
         }
 
         private static void LogFailureOnce(string what, Exception e)

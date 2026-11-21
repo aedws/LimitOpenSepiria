@@ -23,14 +23,14 @@
 ```
 재능 탭        [-10] [-1] [재능 최대 140] [+1] [+10]
                [레벨 20 상한: 적용 중]
-과일 꼬치 탭   [-1] [과일 최대 21] [+1]
+과일 꼬치 탭   [감소·금지 제한: 해제됨]
 ```
 
 | 설정 | 기본값 | 범위 | 동작 |
 |---|---|---|---|
 | 재능 포인트 최대치 | 140 | 게임 기본~140 | 재능 포인트 최대치를 설정값으로 올립니다. 재능 탭의 남은 포인트에 바로 반영됩니다. 가운데 버튼은 게임 기본값과 140을 오갑니다. 최대치를 이미 쓴 포인트보다 낮추면 재능이 초기화됩니다. |
 | 재능별 레벨 상한(20) 해제 | 꺼짐 | 켬/끔 | 재능 하나에 20 넘게 찍을 수 있게 합니다. 효과는 레벨에 비례해 계속 늘어납니다. 끄면 다음에 그 재능을 조정할 때 20으로 돌아옵니다. |
-| 과일 꼬치 최대 개수 | 21 | 게임 기본~21 | 과일 꼬치에서 고를 수 있는 개수를 설정값으로 올립니다. 가운데 버튼은 게임 기본값과 21을 오갑니다. |
+| 과일 꼬치 감소·금지 제한 해제 | 켜짐 | 켬/끔 | 드랍률 감소·등장 금지(마이너스 과일)를 고를 수 있는 개수 제한을 없앱니다. 마이너스 과일은 과일 꼬치 개수에 포함되지 않습니다. 드랍률 증가(플러스 과일)의 개수 제한과, 카테고리 하나에 겹칠 수 있는 횟수는 게임 그대로입니다. |
 
 콘텐츠를 새로 추가하지 않고, 기존 제한만 풉니다.
 
@@ -96,7 +96,7 @@ src/                          모드 소스
   Settings.cs                 설정값, 옵션 화면 등록
   FountainPatches.cs          소원 분수 패치
   FountainUi.cs               소원 분수 화면의 모드 버튼, 용량 표시
-  ProgressionPatches.cs       재능 포인트, 재능 레벨 상한, 과일 꼬치 패치
+  ProgressionPatches.cs       재능 포인트, 재능 레벨 상한, 과일 꼬치 감소·금지 제한 패치
   ProgressionUi.cs            재능 탭·과일 꼬치 탭의 조절 버튼
   GameReflection.cs           게임 내부 타입 접근(리플렉션)
 stubs/                        컴파일 전용 스텁 (배포물에 포함되지 않음)
@@ -109,7 +109,7 @@ stubs/                        컴파일 전용 스텁 (배포물에 포함되지
 - 인벤토리 칸 수는 그대로입니다. 인벤토리에 들어가지 않을 만큼 고르면 초과분이 어떻게 처리되는지는 확인하지 못했습니다.
 - 용량 제한 해제를 끈 상태에서 이터널 아티팩트의 용량은 게임 기본 계산대로 3칸입니다.
 - 재능 포인트 최대치와 레벨 상한은 호스트(솔로 포함)가 정해 모든 참가자에게 적용됩니다. 참가자 화면에는 재능 탭의 조절 버튼이 보이지 않습니다.
-- 과일 꼬치는 화면에서 고를 수 있는 개수가 정확히 설정값이 됩니다. 과일 꼬치 화면이 21개를 보기 좋게 배치하는지는 확인하지 못했습니다.
+- 과일 꼬치 화면의 "선택 수 / 최대" 숫자는 마이너스 과일을 고를 때마다 양쪽이 함께 늘어납니다. 제한을 다시 켜면 초과분은 게임의 오류 표시대로 적용되지 않습니다.
 - 멀티플레이에서는 지급·적용 검사가 호스트에서 돌기 때문에 호스트에도 이 모드가 필요합니다(`everyone`으로 선언).
 
 ## 동작 원리
@@ -126,8 +126,10 @@ stubs/                        컴파일 전용 스텁 (배포물에 포함되지
 | `PlayerAvatar.NetworkmaxPassivePoint` (setter) | Postfix | 게임이 재능 포인트 최대치를 바꿀 때마다 보너스를 다시 맞춥니다(서버). |
 | `PlayerAvatar.AddPassiveStatOnServer` | Prefix | 재능 레벨 상한(`PassiveEntity.maxLevel`)을 설정에 맞춰 둡니다. 원래 값은 기억했다가 되돌립니다. |
 | `UI_PassivePanel.OnOpened`, `UI_FruitSkewerPanel.OnOpened` | Postfix | 탭 안의 조절 버튼을 만들고 표시를 맞춥니다. 버튼은 게임이 모드용으로 공개한 `UIWidgetFactory`로 만듭니다. |
-| `KeywordDatabase.GetConstValue` | Postfix | `fruitSkewerDefaultCount` 상수를 설정값으로 올립니다. |
-| `UI_FruitSkewerPanel.MaxSelectedFruitCount` | Prefix/Postfix/Finalizer | 과일 꼬치 화면의 최대 개수를 설정값으로 맞춥니다. |
+| `UI_FruitSkewerPanel.MaxSelectedFruitCount` | Prefix/Postfix/Finalizer | 최대 개수를 "게임 값 + 고른 마이너스 과일 수"로 돌려줍니다. |
+| `UI_FruitSkewerPanel.AddFruit` | Prefix/Finalizer | 마이너스 과일을 추가하는 동안 한 칸을 더 열어 줍니다. |
+| `UI_FruitSkewerPanel.RefreshCategoryButtonLockState` | Prefix/Postfix/Finalizer | 개수가 가득 차도 마이너스 버튼은 누를 수 있게 되돌립니다. |
+| `DungeonManager.LoadStageAndMove`, `UI_PresetPanel.UpdateFruitSkewerInfo` + `KeywordDatabase.GetConstValue` | Prefix/Finalizer + Postfix | 런 시작 시 서버 적용과 프리셋 표시가 과일을 세는 동안만 개수 상수를 크게 돌려줘, 고른 과일이 모두 적용되게 합니다. |
 
 아이템 데이터는 메서드가 끝나면 원래 값으로 복원되므로 분수 밖(상점, 보상, 도감)에는 영향이 없습니다.
 게임 내부 타입은 이름으로 찾아 접근하므로, 게임 업데이트로 대상이 바뀌면 해당 기능만 꺼지고 로그에 경고가 남습니다.

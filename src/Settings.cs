@@ -10,14 +10,13 @@ namespace LimitOpenSepiria
     internal static class Settings
     {
         public const int TalentPointLimit = 140;
-        public const int FruitSkewerLimit = 21;
 
         private const string KeyUnlimitedCapacity = "unlimited_capacity";
         private const string KeyAllItems = "all_items";
         private const string KeyIncludeOtherTypes = "include_other_types";
         private const string KeyIncludeHidden = "include_hidden";
         private const string KeyTalentPoints = "talent_points";
-        private const string KeyFruitSkewer = "fruit_skewer";
+        private const string KeyUnlimitedFruitBans = "unlimited_fruit_bans";
         private const string KeyUnlimitedTalentLevel = "unlimited_talent_level";
 
         // 옵션 API를 쓸 수 없을 때의 기본값이기도 합니다.
@@ -29,8 +28,8 @@ namespace LimitOpenSepiria
         /// <summary>재능 포인트 최대치. 게임이 준 최대치보다 작으면(0 포함) 게임 값을 그대로 씁니다.</summary>
         public static volatile int TalentPoints = TalentPointLimit;
 
-        /// <summary>과일 꼬치 최대 개수. 게임이 준 개수보다 작으면(0 포함) 게임 값을 그대로 씁니다.</summary>
-        public static volatile int FruitSkewer = FruitSkewerLimit;
+        /// <summary>과일 꼬치에서 드랍률 감소·등장 금지(마이너스 과일)를 개수 제한 없이 고를 수 있게 합니다.</summary>
+        public static volatile bool UnlimitedFruitBans = true;
 
         /// <summary>재능 하나에 찍을 수 있는 레벨 상한(게임 기본 20)을 해제합니다.</summary>
         public static volatile bool UnlimitedTalentLevel = false;
@@ -42,7 +41,7 @@ namespace LimitOpenSepiria
         public static Action TalentLevelCapChanged;
 
         private static Action<int> setTalentPoints;
-        private static Action<int> setFruitSkewer;
+        private static Action<bool> setUnlimitedFruitBans;
         private static Action<bool> setUnlimitedTalentLevel;
 
         private static Action<bool> setUnlimitedCapacity;
@@ -92,10 +91,10 @@ namespace LimitOpenSepiria
                         changed();
                 });
 
-            ModSliderOption fruit = options.AddSlider(
-                KeyFruitSkewer, 0f, FruitSkewerLimit, FruitSkewerLimit, 1f,
-                "과일 꼬치 최대 개수 (0 = 게임 기본) / Max fruit skewer picks (0 = game default)",
-                value => { FruitSkewer = ToInt(value, FruitSkewerLimit); Save(options); });
+            ModToggleOption fruitBans = options.AddToggle(
+                KeyUnlimitedFruitBans, true,
+                "과일 꼬치 드랍률 감소·등장 금지 개수 제한 해제 / Unlimited fruit skewer decreases & bans",
+                value => { UnlimitedFruitBans = value; Save(options); });
 
             ModToggleOption talentLevel = options.AddToggle(
                 KeyUnlimitedTalentLevel, false,
@@ -112,14 +111,14 @@ namespace LimitOpenSepiria
             UnlimitedTalentLevel = talentLevel.Value;
             setUnlimitedTalentLevel = value => talentLevel.Value = value;
             setTalentPoints = value => talent.Value = value;
-            setFruitSkewer = value => fruit.Value = value;
+            UnlimitedFruitBans = fruitBans.Value;
+            setUnlimitedFruitBans = value => fruitBans.Value = value;
 
             UnlimitedCapacity = capacity.Value;
             AllItems = allItems.Value;
             IncludeOtherTypes = otherTypes.Value;
             IncludeHidden = includeHidden.Value;
             TalentPoints = ToInt(talent.Value, TalentPointLimit);
-            FruitSkewer = ToInt(fruit.Value, FruitSkewerLimit);
 
             // 값을 옵션 항목에 쓰면 위의 onChanged 가 불려 필드와 저장이 함께 갱신됩니다.
             setUnlimitedCapacity = value => capacity.Value = value;
@@ -152,11 +151,10 @@ namespace LimitOpenSepiria
                 changed();
         }
 
-        public static void SetFruitSkewer(int value)
+        public static void SetUnlimitedFruitBans(bool value)
         {
-            value = ToInt(value, FruitSkewerLimit);
-            if (setFruitSkewer != null) setFruitSkewer(value);
-            else FruitSkewer = value;
+            if (setUnlimitedFruitBans != null) setUnlimitedFruitBans(value);
+            else UnlimitedFruitBans = value;
         }
 
         public static void SetUnlimitedTalentLevel(bool value)

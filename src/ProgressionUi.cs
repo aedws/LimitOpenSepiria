@@ -16,9 +16,9 @@ namespace LimitOpenSepiria
     ///
     ///   재능 탭      [-10] [-1] [재능 최대 140] [+1] [+10]
     ///                [레벨 20 상한: 적용 중/해제됨]
-    ///   과일 꼬치 탭 [-1] [과일 최대 21] [+1]
+    ///   과일 꼬치 탭 [감소·금지 제한: 해제됨/적용 중]
     ///
-    /// 가운데 버튼은 '게임 기본값 ↔ 모드 최대값'을 오갑니다.
+    /// 재능 탭의 가운데 버튼은 '게임 기본값 ↔ 모드 최대값'을 오갑니다.
     /// </summary>
     internal static class ProgressionUi
     {
@@ -50,6 +50,8 @@ namespace LimitOpenSepiria
         private static MethodInfo talentResetPoints;
         private static FieldInfo avatarPassiveStats;
         private static FieldInfo fruitPreviousCount;
+        private static MethodInfo fruitRefreshLocks;
+        private static MethodInfo fruitUpdateEffects;
         private static FieldInfo buttonText;
         private static PropertyInfo textProperty;
 
@@ -86,6 +88,8 @@ namespace LimitOpenSepiria
             if (fruitOpened != null)
             {
                 fruitPreviousCount = fruitPanel.GetField("pevCurSelectedFruitCount", GameReflection.Any);
+                fruitRefreshLocks = AccessTools.DeclaredMethod(fruitPanel, "RefreshCategoryButtonLockState", Type.EmptyTypes);
+                fruitUpdateEffects = AccessTools.DeclaredMethod(fruitPanel, "UpdateEffectInfo", Type.EmptyTypes);
                 harmony.Patch(fruitOpened, postfix: new HarmonyMethod(typeof(ProgressionUi), nameof(FruitOpenedPostfix)));
             }
             else
@@ -221,13 +225,11 @@ namespace LimitOpenSepiria
         private static void BuildFruitBar(object panel, FruitBar bar)
         {
             UIWidgetFactory widgets;
-            if (!HorayModAPI.TryGetUIWidgets(out widgets))
+            if (!ProgressionPatches.FruitReady || !HorayModAPI.TryGetUIWidgets(out widgets))
                 return;
 
             var row = new RowBuilder(widgets, ((Component)panel).transform, 0);
-            row.Add("-1", 24f, () => StepFruit(panel, bar, -1));
-            bar.Value = row.Add("", 104f, () => StepFruit(panel, bar, 0));
-            row.Add("+1", 24f, () => StepFruit(panel, bar, 1));
+            bar.Value = row.Add("", 216f, () => ToggleFruitBans(panel, bar));
             bar.Row = row.Finish();
         }
 
@@ -235,24 +237,22 @@ namespace LimitOpenSepiria
         {
             if (GameReflection.IsNull(bar.Row))
                 return;
-            int current = ProgressionPatches.FruitMax(panel, false);
-            bool isDefault = current <= ProgressionPatches.FruitMax(panel, true);
-            SetLabel(bar.Value, Text("과일 최대 ", "Fruit max ") + current + (isDefault ? Text(" (기본)", " (default)") : ""));
+            SetLabel(bar.Value, Settings.UnlimitedFruitBans
+                ? Text("감소·금지 제한: 해제됨", "Decrease/ban limit: removed")
+                : Text("감소·금지 제한: 적용 중", "Decrease/ban limit: active"));
         }
 
-        // delta 가 0 이면 '게임 기본값 ↔ 모드 최대값'을 오갑니다.
-        private static void StepFruit(object panel, FruitBar bar, int delta)
+        private static void ToggleFruitBans(object panel, FruitBar bar)
         {
-            Guard("과일 꼬치 개수 조절", () =>
+            Guard("과일 꼬치 제한 전환", () =>
             {
-                int vanilla = ProgressionPatches.FruitMax(panel, true);
-                int current = ProgressionPatches.FruitMax(panel, false);
-                int value = delta == 0
-                    ? (current <= vanilla ? Settings.FruitSkewerLimit : 0)
-                    : NextValue(current, vanilla, delta, Settings.FruitSkewerLimit);
-                Settings.SetFruitSkewer(value);
+                Settings.SetUnlimitedFruitBans(!Settings.UnlimitedFruitBans);
 
-                // 화면의 '선택 수 / 최대' 글자는 선택 수가 바뀔 때만 갱신되므로, 다시 그리게 만듭니다.
+                // 버튼 잠금, 효과 목록, '선택 수 / 최대' 글자를 새 기준으로 다시 그리게 합니다.
+                if (fruitRefreshLocks != null)
+                    fruitRefreshLocks.Invoke(panel, null);
+                if (fruitUpdateEffects != null)
+                    fruitUpdateEffects.Invoke(panel, null);
                 if (fruitPreviousCount != null)
                     fruitPreviousCount.SetValue(panel, -1);
                 RefreshFruitBar(panel, bar);
