@@ -187,11 +187,10 @@ namespace FrostforgedCrescent
             addons.SetValue(addon, kept.Count);
             Reflect.Set(simple, "addons", addons);
 
-            // 공격 이펙트를 얼음빛으로: 공격 데이터를 이 무기 전용으로 복제해 표시해 두고, 색은 무녀의 예언에서 가져옵니다.
+            // 공격 이펙트를 얼음빛으로: 공격 데이터를 이 무기 전용으로 복제해 표시해 둡니다.
             try
             {
                 LanceFx.Claim(simple);
-                LanceFx.LearnTint(look == null ? null : Simple(look));
             }
             catch (Exception e)
             {
