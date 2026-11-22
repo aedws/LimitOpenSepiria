@@ -1,4 +1,4 @@
-# 서리기수 : 돌격창 블루비틀의 손에 든 그림(창끝이 위). 글자 한 칸이 한 픽셀이고 1픽셀 윤곽이 자동으로 둘러집니다.
+# 서리기수 : 돌격창 블루비틀의 손에 든 그림(창끝이 위). 글자 한 칸이 한 픽셀이고 윤곽이 자동으로 둘러집니다.
 from PIL import Image
 import sys
 O=(27,24,40,255)
@@ -8,10 +8,16 @@ HEAD=[
 "...W...",
 "...W...",
 "...W...",
+"...W...",
+"...Wb..",
+"...Wb..",
+"..cWb..",
 "..cWb..",
 "..cWb..",
 "..cWb..",
 "..cWB..",
+"..cWB..",
+".ccWbB.",
 ".ccWbB.",
 ".ccWbB.",
 ".ccWbB.",
@@ -30,16 +36,17 @@ BUTT=[
 "...c...",
 "...W...",
 ]
-rows=HEAD+[SHAFT[i%len(SHAFT)] for i in range(16)]+BUTT
+rows=HEAD+[SHAFT[i%len(SHAFT)] for i in range(15)]+BUTT
+# 다른 봉류 무기처럼 윤곽은 2픽셀(5x5 에서 네 귀퉁이를 뺀 모양). 가장자리가 잘리지 않게 바깥에 빈 줄을 한 줄 둡니다.
+RING=[(dx,dy) for dx in range(-2,3) for dy in range(-2,3) if abs(dx)+abs(dy)<4]
 def render(rows):
-    h=len(rows); w=len(rows[0]); body={}
+    h=len(rows); w=len(rows[0]); m=3; body={}
     for y,row in enumerate(rows):
         for x,ch in enumerate(row):
-            if ch!='.': body[(x+1,y+1)]=PAL[ch]
-    im=Image.new('RGBA',(w+2,h+2),(0,0,0,0)); px=im.load()
+            if ch!='.': body[(x+m,y+m)]=PAL[ch]
+    im=Image.new('RGBA',(w+2*m,h+2*m),(0,0,0,0)); px=im.load()
     for (x,y) in body:
-        for dx,dy in((1,0),(-1,0),(0,1),(0,-1)):
-            if (x+dx,y+dy) not in body: px[x+dx,y+dy]=O
+        for dx,dy in RING: px[x+dx,y+dy]=O
     for (x,y),c in body.items(): px[x,y]=c
     return im
 out,prev=sys.argv[1],sys.argv[2]
