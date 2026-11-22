@@ -276,7 +276,13 @@ namespace FrostforgedCrescent
             Rect sourceRect = source.rect;
             Vector2 sourcePivot = source.pivot;
             Vector2 grip = pivot ?? new Vector2(sourcePivot.x / sourceRect.width, sourcePivot.y / sourceRect.height);
-            Sprite tinted = SpriteLoader.Load(Path.Combine(packageRoot, "Sprites", "lance.png"), source, "블루비틀 창 그림", grip, source.pixelsPerUnit / scale) as Sprite
+            // shift: 그림을 창끝 쪽으로 몇 픽셀 밀지(쥐는 위치가 그만큼 물미 쪽으로 갑니다). 전용 그림에만 적용합니다.
+            string customPath = Path.Combine(packageRoot, "Sprites", "lance.png");
+            float shift;
+            int customHeight = PngHeight(customPath);
+            if (TryNumber(options, "shift", out shift) && customHeight > 0)
+                grip = new Vector2(grip.x, grip.y - shift / customHeight);
+            Sprite tinted = SpriteLoader.Load(customPath, source, "블루비틀 창 그림", grip, source.pixelsPerUnit / scale) as Sprite
                             ?? SpriteTint.Bluer(source, pivot, scale);
             if (tinted == null)
                 return;
@@ -303,6 +309,25 @@ namespace FrostforgedCrescent
                     Reflect.Set(simple, field, tinted);
             Log.Info("블루비틀 그림 적용 (기준점 " + (pivot.HasValue ? pivot.Value.x.ToString("0.##", CultureInfo.InvariantCulture) + ", " + pivot.Value.y.ToString("0.##", CultureInfo.InvariantCulture) : "원본")
                      + ", 배율 " + scale.ToString("0.##", CultureInfo.InvariantCulture) + ")");
+        }
+
+        // PNG 머리말에서 세로 픽셀 수를 읽습니다(읽지 못하면 0).
+        private static int PngHeight(string path)
+        {
+            try
+            {
+                if (!File.Exists(path))
+                    return 0;
+                byte[] head = new byte[24];
+                using (FileStream stream = File.OpenRead(path))
+                    if (stream.Read(head, 0, 24) < 24)
+                        return 0;
+                return (head[20] << 24) | (head[21] << 16) | (head[22] << 8) | head[23];
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
         private static Dictionary<string, string> ReadOptions(string path)

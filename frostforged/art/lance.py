@@ -1,4 +1,5 @@
 # 서리기수 : 돌격창 블루비틀의 손에 든 그림(창끝이 위). 글자 한 칸이 한 픽셀이고 윤곽이 자동으로 둘러집니다.
+# lance_icon.png(아이콘)은 같은 그림에 2픽셀 윤곽을 두른 것으로, 따로 보관합니다.
 from PIL import Image
 import sys
 O=(27,24,40,255)
@@ -34,10 +35,10 @@ BUTT=[
 "....W....",
 ]
 rows=HEAD+[SHAFT[i%len(SHAFT)] for i in range(14)]+BUTT
-# 다른 봉류 무기처럼 윤곽은 2픽셀(5x5 에서 네 귀퉁이를 뺀 모양). 가장자리가 잘리지 않게 바깥에 빈 줄을 한 줄 둡니다.
-RING=[(dx,dy) for dx in range(-2,3) for dy in range(-2,3) if abs(dx)+abs(dy)<4]
+# 손에 든 그림의 윤곽은 본판 봉류와 같은 1픽셀입니다(위·아래·좌·우).
+RING=[(1,0),(-1,0),(0,1),(0,-1)]
 def render(rows):
-    h=len(rows); w=len(rows[0]); m=3; body={}
+    h=len(rows); w=len(rows[0]); m=1; body={}
     for y,row in enumerate(rows):
         for x,ch in enumerate(row):
             if ch!='.': body[(x+m,y+m)]=PAL[ch]
