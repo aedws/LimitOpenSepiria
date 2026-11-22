@@ -10,6 +10,13 @@ namespace FrostforgedCrescent
     /// </summary>
     public class CrescentAddon : WeaponAddon
     {
+        /// <summary>납도 상태에서의 이동 속도 증가량(배율에 더해집니다). 0.6 = 60%.</summary>
+        public const float SheathMoveSpeedBonus = 0.6f;
+
+        private Action<int> specialHandler;
+        private object avatar;
+        private bool speedApplied;
+        private bool loggedSpeed;
         private Action<int> beginHandler;
         private object controller;
         private int logged;
@@ -25,6 +32,11 @@ namespace FrostforgedCrescent
                 controller = Reflect.Get(parent, "Networkowner");
                 if (Reflect.IsNull(controller))
                     return;
+                avatar = Reflect.Get(controller, "unitAvatar");
+                Reflect.Set(parent, "sheathActionType", 0); // 특수 공격을 납도로
+                specialHandler = OnSpecialSwing;
+                var special = Reflect.Get(controller, "OnSpecialAttackSwing") as Action<int>;
+                Reflect.Set(controller, "OnSpecialAttackSwing", (Action<int>)Delegate.Combine(special, specialHandler));
                 beginHandler = OnBeginAttack;
                 var current = Reflect.Get(controller, "OnBeginAttackAnimation") as Action<int>;
                 Reflect.Set(controller, "OnBeginAttackAnimation", (Action<int>)Delegate.Combine(current, beginHandler));
@@ -40,6 +52,12 @@ namespace FrostforgedCrescent
             base.OnDisableAddon();
             try
             {
+                SetSpeedBonus(false);
+                if (specialHandler != null && !Reflect.IsNull(controller))
+                {
+                    var special = Reflect.Get(controller, "OnSpecialAttackSwing") as Action<int>;
+                    Reflect.Set(controller, "OnSpecialAttackSwing", (Action<int>)Delegate.Remove(special, specialHandler));
+                }
                 if (beginHandler != null && !Reflect.IsNull(controller))
                 {
                     var current = Reflect.Get(controller, "OnBeginAttackAnimation") as Action<int>;
@@ -51,7 +69,57 @@ namespace FrostforgedCrescent
                 Log.Warn("무기 효과 비활성화 중 오류: " + e);
             }
             beginHandler = null;
+            specialHandler = null;
             controller = null;
+            avatar = null;
+        }
+
+        private bool IsServer { get { return Equals(Reflect.Get(this, "isServer"), true); } }
+
+        private bool IsSheathed
+        {
+            get { return Equals(Reflect.Get(parent, "sheathStateEnabled"), true) && Equals(Reflect.Get(parent, "isBladeSheathed"), true); }
+        }
+
+        private void Update()
+        {
+            if (Reflect.IsNull(parent) || Reflect.IsNull(controller))
+                return;
+            try
+            {
+                // 계승한 무기 효과가 특수 공격을 튕겨내기로 바꾸므로, 납도로 유지합니다.
+                if (Convert.ToInt32(Reflect.Get(parent, "sheathActionType")) != 0)
+                    Reflect.Set(parent, "sheathActionType", 0);
+                if (IsServer)
+                    SetSpeedBonus(IsSheathed);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        // 납도 상태인 동안만 이동 속도 배율을 올립니다. 올린 만큼만 되돌립니다.
+        private void SetSpeedBonus(bool on)
+        {
+            if (on == speedApplied || Reflect.IsNull(avatar))
+                return;
+            float current = Convert.ToSingle(Reflect.Get(avatar, "localMoveSpeedMultiplier"));
+            if (!Reflect.Set(avatar, "NetworklocalMoveSpeedMultiplier", current + (on ? SheathMoveSpeedBonus : -SheathMoveSpeedBonus)))
+                return;
+            speedApplied = on;
+            if (on && !loggedSpeed)
+            {
+                loggedSpeed = true;
+                Log.Info("납도 이동 속도 증가 적용 (" + current.ToString("0.##") + " → " + (current + SheathMoveSpeedBonus).ToString("0.##") + ")");
+            }
+        }
+
+        // 납도 상태에서 나간 공격(게임에서는 특수 공격으로 처리됩니다).
+        private void OnSpecialSwing(int index)
+        {
+            if (!IsServer || !Equals(Reflect.Get(parent, "sheathStateEnabled"), true))
+                return;
+            CharmLink.OnSheathAttack(avatar);
         }
 
         private void OnBeginAttack(int fireId)

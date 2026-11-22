@@ -139,7 +139,7 @@ namespace FrostforgedCrescent
 
             try
             {
-                FrameRecolor.Apply(simple);
+                FrameRecolor.Apply(simple, packageRoot);
             }
             catch (Exception e)
             {

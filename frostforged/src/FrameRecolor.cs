@@ -10,7 +10,7 @@ namespace FrostforgedCrescent
     ///
     /// 카타나의 모습은 AnimationSet(상태별 그림 묶음)을 Animator2D 가 재생하는 방식입니다.
     /// 휘두르는 동작과 정확히 맞아야 하므로, 원본 프레임 하나하나를 읽어 서리단조 배색으로 다시 칠한
-    /// 새 그림을 만들고, 그 그림들로 이루어진 새 AnimationSet 을 이 무기의 프리팹에만 넣습니다.
+    /// 칼 모양을 얇게 다듬은 새 그림을 만들고, 그 그림들로 이루어진 새 AnimationSet 을 이 무기의 프리팹에만 넣습니다.
     /// 게임 원본 그림과 다른 무기는 바뀌지 않으며, 게임 그림을 모드에 담지도 않습니다(실행 중에 만듭니다).
     /// </summary>
     internal static class FrameRecolor
@@ -19,11 +19,17 @@ namespace FrostforgedCrescent
         private static readonly Dictionary<Sprite, Sprite> Sprites = new Dictionary<Sprite, Sprite>();
         private static readonly Dictionary<UnityEngine.Object, UnityEngine.Object> Sets = new Dictionary<UnityEngine.Object, UnityEngine.Object>();
         private static int failed;
+        private static string dumpFolder;
+        private static int dumped;
 
         /// <summary>무기 프리팹의 칼·칼집 애니메이터에 전용 프레임을 넣습니다. 성공한 프레임 수를 돌려줍니다.</summary>
-        public static int Apply(Component weapon)
+        public static int Apply(Component weapon, string packageRoot)
         {
             failed = 0;
+            dumpFolder = null;
+            dumped = 0;
+            if (!string.IsNullOrEmpty(packageRoot) && System.IO.Directory.Exists(System.IO.Path.Combine(packageRoot, "FrameDump")))
+                dumpFolder = System.IO.Path.Combine(packageRoot, "FrameDump");
             int sets = 0;
             foreach (string field in new[] { "katanaAnimator", "scabbardAnimator" })
             {
@@ -92,10 +98,14 @@ namespace FrostforgedCrescent
                 if (width <= 0 || height <= 0 || x < 0 || y < 0 || x + width > textureWidth || (y + height) * textureWidth > all.Length)
                     throw new InvalidOperationException("그림 영역이 텍스처를 벗어남");
 
-                var pixels = new Color32[width * height];
+                var original = new Color32[width * height];
                 for (int row = 0; row < height; row++)
                     for (int column = 0; column < width; column++)
-                        pixels[row * width + column] = Palette.Map(all[(y + row) * textureWidth + x + column]);
+                        original[row * width + column] = all[(y + row) * textureWidth + x + column];
+                Color32[] pixels = Shape.Thin(original, width, height);
+                for (int i = 0; i < pixels.Length; i++)
+                    pixels[i] = Palette.Map(pixels[i]);
+                Dump(source.name, original, pixels, width, height);
 
                 var created = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 created.filterMode = FilterMode.Point;
@@ -120,6 +130,39 @@ namespace FrostforgedCrescent
                     Log.Warn("전용 프레임: '" + source.name + "' 을(를) 읽지 못했습니다 — " + e.Message);
                 failed++;
                 return null;
+            }
+        }
+
+        // 개발용: 모드 폴더에 FrameDump 폴더가 있으면 원본과 결과 그림을 PNG 로 남깁니다(모양을 다듬을 때 참고).
+        private static void Dump(string name, Color32[] original, Color32[] result, int width, int height)
+        {
+            if (dumpFolder == null || dumped >= 300)
+                return;
+            try
+            {
+                Type conversion = Reflect.UnityType("UnityEngine.ImageConversion", "UnityEngine.ImageConversionModule");
+                System.Reflection.MethodInfo encode = conversion == null ? null : conversion.GetMethod("EncodeToPNG", new[] { typeof(Texture2D) });
+                if (encode == null)
+                {
+                    dumpFolder = null;
+                    return;
+                }
+                foreach (var pair in new[] { new KeyValuePair<string, Color32[]>("_orig", original), new KeyValuePair<string, Color32[]>("_new", result) })
+                {
+                    var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                    texture.SetPixels32(pair.Value);
+                    texture.Apply();
+                    var bytes = (byte[])encode.Invoke(null, new object[] { texture });
+                    string file = dumped.ToString("000") + "_" + string.Concat(name.Split(System.IO.Path.GetInvalidFileNameChars())) + pair.Key + ".png";
+                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(dumpFolder, file), bytes);
+                    UnityEngine.Object.Destroy(texture);
+                }
+                dumped++;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("프레임 내보내기 실패: " + e.Message);
+                dumpFolder = null;
             }
         }
 
@@ -150,6 +193,60 @@ namespace FrostforgedCrescent
             }
             Pixels[texture] = cached;
             return cached;
+        }
+    }
+
+    /// <summary>
+    /// 칼 모양 다듬기: 도신이 얇은 카타나.
+    /// 칼의 긴 방향에 수직으로, 몸통(윤곽이 아닌 부분)이 2픽셀 이상인 곳을 한쪽에서 1픽셀 깎고 윤곽을 안으로 당깁니다.
+    /// 몸통이 1픽셀인 곳은 그대로 둡니다. 기준점은 바뀌지 않으므로 손에 쥔 위치도 그대로입니다.
+    /// </summary>
+    internal static class Shape
+    {
+        private static bool IsBody(Color32 c)
+        {
+            return c.a != 0 && Math.Max(c.r, Math.Max(c.g, c.b)) > 46; // 윤곽(아주 어두운 색)이 아닌 부분
+        }
+
+        public static Color32[] Thin(Color32[] source, int width, int height)
+        {
+            var result = (Color32[])source.Clone();
+            bool upright = height >= width;        // 세로로 선 칼이면 가로로 깎습니다
+            int lines = upright ? height : width;
+            int length = upright ? width : height;
+            var clear = new Color32(0, 0, 0, 0);
+
+            for (int line = 0; line < lines; line++)
+            {
+                Func<int, int> index = upright ? (Func<int, int>)(i => line * width + i) : (i => i * width + line);
+                int start = -1;
+                for (int i = 0; i <= length; i++)
+                {
+                    bool body = i < length && IsBody(source[index(i)]);
+                    if (body && start < 0)
+                        start = i;
+                    if (body || start < 0)
+                        continue;
+
+                    int end = i - 1; // 몸통 구간 [start..end]
+                    if (end - start + 1 >= 2)
+                    {
+                        if (i < length && source[index(i)].a != 0)
+                        {
+                            // 바깥에 윤곽이 있으면: 윤곽을 한 칸 안으로, 원래 윤곽 자리는 (그 너머가 비어 있을 때) 비웁니다.
+                            result[index(end)] = source[index(i)];
+                            if (i + 1 >= length || source[index(i + 1)].a == 0)
+                                result[index(i)] = clear;
+                        }
+                        else
+                        {
+                            result[index(end)] = clear;
+                        }
+                    }
+                    start = -1;
+                }
+            }
+            return result;
         }
     }
 
