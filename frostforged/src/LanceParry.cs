@@ -12,7 +12,7 @@ namespace FrostforgedCrescent
     /// <summary>
     /// 블루비틀의 우클릭: 패링 → 퓨리 → 돌파.
     ///
-    ///  - 퓨리가 없을 때 우클릭: 창의 원래 특수 공격이 그대로 나가고, 그 동작이 시작될 때 패링 판정이 걸립니다
+    ///  - 퓨리가 없을 때 우클릭: 창의 원래 특수 공격 동작만 나가고(피해·가드 없음), 그 동작이 시작될 때 패링 판정이 걸립니다
     ///    (무기 종류와 상관없는 게임의 공용 패링 기능 WeaponControllerSimple.StartParryInvincible).
     ///  - 패링에 성공하면(게임이 "PARRY!" 를 띄우는 순간) 퓨리 3개를 얻습니다.
     ///  - 퓨리가 있을 때 우클릭: 퓨리 1개를 써서 '돌파'. 조준 방향으로 돌진하며 창격의 마지막 찌르기를 특수 공격 판정으로
@@ -53,6 +53,36 @@ namespace FrostforgedCrescent
             harmony.Patch(sub, prefix: new HarmonyMethod(typeof(LanceParry), nameof(SubPrefix)));
             harmony.Patch(start, postfix: new HarmonyMethod(typeof(LanceParry), nameof(StartPostfix)));
             harmony.Patch(parried, prefix: new HarmonyMethod(typeof(LanceParry), nameof(ParriedPrefix)));
+
+            // 원래 특수 공격은 동작만 남깁니다: 공격 판정을 만들지 않고, 동작에 딸린 방어(가드)도 걸지 않습니다.
+            // 가드가 남아 있으면 패링 시간이 지난 뒤의 공격이 가드로 막혀, 패링처럼 보이는데 퓨리는 쌓이지 않습니다.
+            Type controller = Reflect.GameType("WeaponControllerSimple");
+            MethodInfo attack = typeof(WeaponSimple).GetMethods(Reflect.Any).FirstOrDefault(m =>
+                m.Name == "CreateSpecialAttackProjectile" && m.GetParameters().Length == 8 && m.GetParameters()[0].ParameterType == typeof(int));
+            if (attack != null)
+                harmony.Patch(attack, prefix: new HarmonyMethod(typeof(LanceParry), nameof(NoAttackPrefix)));
+            else
+                Log.Warn("특수 공격 판정 지점을 찾지 못해 블루비틀의 우클릭 공격 피해가 그대로 남습니다.");
+            if (controller != null)
+                foreach (MethodInfo guard in AccessTools.GetDeclaredMethods(controller).Where(m => m.Name == "StartGuardCustomAngle" || m.Name == "StartGuard"))
+                    harmony.Patch(guard, prefix: new HarmonyMethod(typeof(LanceParry), nameof(NoGuardPrefix)));
+        }
+
+        private static bool NoAttackPrefix(Component __instance)
+        {
+            return !IsLance(__instance);
+        }
+
+        private static bool NoGuardPrefix(object __instance)
+        {
+            try
+            {
+                return !IsLance(Reflect.Get(__instance, "currentWeapon") as Component);
+            }
+            catch (Exception)
+            {
+                return true;
+            }
         }
 
         private static void Fail(string where, Exception e)
