@@ -235,7 +235,7 @@ namespace FrostforgedCrescent
                 return;
             }
 
-            // 프리팹: 게임의 '능력치 아티팩트' 하나. 레벨은 0 부터라 값이 N 개면 최대 레벨은 N-1 입니다.
+            // 프리팹: 게임의 '능력치 아티팩트' 하나.
             GameObject prefab = HorayModAPI.CreateNetworkPrefab("Charm-FFC_" + item.Name);
             Component charm = prefab.AddComponent(charmType);
             Array groups = Array.CreateInstance(groupType, item.Stats.Length);
@@ -249,7 +249,7 @@ namespace FrostforgedCrescent
             }
             Reflect.Set(charm, "stats", groups);
             Reflect.Set(charm, "showStatsEffectStringFirst", true);
-            Reflect.Set(charm, "maxLevel", item.Stats[0].Values.Length - 1);
+            Reflect.Set(charm, "maxLevel", item.Stats[0].Values.Length); // 값이 N 개면 최대 레벨 N (마지막 값은 최대 레벨까지 유지)
             Reflect.Set(charm, "effectsString", Array.CreateInstance(Reflect.GameType("LocalizedString"), 0));
             Reflect.Set(charm, "isUniqueEffect", true); // [고유]
             if (!HorayModAPI.RegisterNetworkPrefab(prefab, Entry.ModId + ":item-" + item.Name.ToLowerInvariant()))

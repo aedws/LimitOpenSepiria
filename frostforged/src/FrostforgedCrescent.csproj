@@ -10,7 +10,7 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <DebugType>none</DebugType>
     <Deterministic>true</Deterministic>
-    <Version>0.11.0</Version>
+    <Version>0.11.1</Version>
     <!--
       게임 설치 폴더를 넘기면 실제 게임 DLL을 참조해 빌드합니다(권장).
         dotnet build -c Release -p:GameDir="C:\Program Files (x86)\Steam\steamapps\common\Sephiria"
