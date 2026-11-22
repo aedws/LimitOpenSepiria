@@ -36,6 +36,8 @@ namespace FrostforgedCrescent
                     return;
                 if (!Wielders.Contains(avatar))
                     Wielders.Add(avatar);
+                Addons.RemoveAll(x => Reflect.IsNull(x) || ReferenceEquals(x, this));
+                Addons.Add(this);
                 if (Equals(Reflect.Get(this, "isServer"), true))
                     statApplied = AddAttackSpeed(AttackSpeedBonus);
                 Log.Info("블루비틀 무기 효과 활성화 (공격 속도 +" + AttackSpeedBonus + "% " + (statApplied ? "적용" : "미적용") + ")");
@@ -52,6 +54,7 @@ namespace FrostforgedCrescent
             try
             {
                 Wielders.Remove(avatar);
+                Addons.Remove(this);
                 if (statApplied)
                     AddAttackSpeed(-AttackSpeedBonus);
                 statApplied = false;
@@ -70,6 +73,17 @@ namespace FrostforgedCrescent
                 return false;
             add.Invoke(avatar, new[] { Enum.Parse(stat, "AttackSpeed"), value });
             return true;
+        }
+
+        private static readonly List<LanceAddon> Addons = new List<LanceAddon>();
+
+        /// <summary>avatar 가 들고 있는 블루비틀의 무기 효과(없으면 null)</summary>
+        public static LanceAddon Find(object avatar)
+        {
+            foreach (LanceAddon addon in Addons)
+                if (!Reflect.IsNull(addon) && ReferenceEquals(addon.avatar, avatar))
+                    return addon;
+            return null;
         }
 
         /// <summary>avatar 가 지금 블루비틀을 들고 있는가</summary>

@@ -160,6 +160,6 @@ dotnet build frostforged/src/FrostforgedCrescent.csproj -c Release
 - 특수 공격은 납도이며, 납도 상태에서는 이동 속도가 60% 증가하고 납도 공격이 축사의 검집과 볼루스파(조준 방향)를 발동시킵니다.
 - 아티팩트 5종(서리칼날, 서리한 : II형, 악보 : 북풍, 혈석 펜던트, 혈석 십자가)과 '생명' 콤보를 추가합니다. 등록은 `ItemContent.cs`, 효과 처리는 `ItemEffects.cs`, 아이콘은 `Sprites/Items/`(생성 스크립트 `frostforged/art/items.py`)입니다.
 - 먹구름 콤보 개선(`DarkCloudBoost.cs`): 먹구름이 0이어도 콤보(2)가 켜져 있으면 번개가 50% 피해로 발동하고, 이때 번개·소모 이펙트는 절반 크기로 나옵니다(이펙트 축소는 호스트 본인 화면만).
-- 무기 `서리기수 : 돌격창 블루비틀`(`LanceFactory.cs`, `LanceAddon.cs`): 돌격창 기오로이드의 프리팹을 복제해 창격을 쓰고, 전용 창 그림(`Sprites/lance.png`, 생성 스크립트 `frostforged/art/lance.py`)을 씁니다. 백상의 봉의 강화 무기입니다. 창격 3·4·5타 반복은 `LanceMotion.cs`(동작 위치를 모드 폴더 `lance_motion.txt` 에 기록), 약화된 볼루스파는 `WeakSpear.cs`, 손에 든 그림 조정은 `Sprites/lance.txt` 입니다.
+- 무기 `서리기수 : 돌격창 블루비틀`(`LanceFactory.cs`, `LanceAddon.cs`): 돌격창 기오로이드의 프리팹을 복제해 창격을 쓰고, 전용 창 그림(`Sprites/lance.png`, 생성 스크립트 `frostforged/art/lance.py`)을 씁니다. 백상의 봉의 강화 무기입니다. 창격 3·4·5타 반복은 `LanceMotion.cs`(동작 위치를 모드 폴더 `lance_motion.txt` 에 기록), 약화된 볼루스파는 `WeakSpear.cs`, 얼음 궤적은 `LanceFx.cs`, 우클릭 패링과 돌파 찌르기는 `LanceParry.cs`, 손에 든 그림 조정은 `Sprites/lance.txt` 입니다.
 - 아티팩트 수치는 0레벨이 1레벨의 절반(불이익·켜짐/꺼짐 효과는 1레벨과 같음)이고, 1레벨부터 설정한 값이 차례로 적용됩니다.
 - 공격 모션을 첫 번째 베기로 고정하는 기능은 아직 없습니다. 0.1.0은 그 구현에 필요한 애니메이션 정보를 로그(`[FrostforgedCrescent]`)로 남깁니다.

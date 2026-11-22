@@ -33,6 +33,7 @@ namespace FrostforgedCrescent
                     LanceMotion.Apply(harmony);
                     WeakSpear.Apply(harmony);
                     LanceFx.Apply(harmony);
+                    LanceParry.Apply(harmony);
                 }
                 catch (Exception e)
                 {
