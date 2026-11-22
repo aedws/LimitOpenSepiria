@@ -31,7 +31,7 @@ namespace FrostforgedCrescent
                 if (Reflect.IsNull(sprite))
                     return null;
 
-                float x = -0.25f, y = 0.45f, angle = 150f, scale = 1f;
+                float x = -0.4f, y = 0.45f, angle = 150f, scale = 1f;
                 int order = 0;
                 ReadSettings(ref x, ref y, ref angle, ref scale, ref order);
 

@@ -16,6 +16,8 @@ namespace FrostforgedCrescent
 
         private Action<int> specialHandler;
         private GameObject hip;
+        private const string SheathSpeedStat = "SPEEDSHEATH";
+        private bool sheathSpeedApplied;
         private object avatar;
         private bool speedApplied;
         private bool loggedSpeed;
@@ -36,6 +38,12 @@ namespace FrostforgedCrescent
                     return;
                 avatar = Reflect.Get(controller, "unitAvatar");
                 hip = HipScabbard.Create(controller as Component, parent as Component);
+                // 납도 공격 간격이 공격 속도를 따르게 합니다(게임의 '납도 공격 속도' 능력치를 켭니다).
+                if (IsServer && !sheathSpeedApplied && !Reflect.IsNull(avatar))
+                {
+                    Reflect.Call(avatar, null, "AddCustomStatUnsafe", SheathSpeedStat, 1);
+                    sheathSpeedApplied = true;
+                }
                 Reflect.Set(parent, "sheathActionType", 0); // 특수 공격을 납도로
                 specialHandler = OnSpecialSwing;
                 var special = Reflect.Get(controller, "OnSpecialAttackSwing") as Action<int>;
@@ -56,6 +64,9 @@ namespace FrostforgedCrescent
             try
             {
                 SetSpeedBonus(false);
+                if (sheathSpeedApplied && !Reflect.IsNull(avatar))
+                    Reflect.Call(avatar, null, "AddCustomStatUnsafe", SheathSpeedStat, -1);
+                sheathSpeedApplied = false;
                 HipScabbard.Destroy(hip);
                 hip = null;
                 if (specialHandler != null && !Reflect.IsNull(controller))
