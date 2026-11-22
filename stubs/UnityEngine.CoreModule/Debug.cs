@@ -13,7 +13,73 @@ namespace UnityEngine
     {
         public string name { get { return null; } set { } }
         public static Object Instantiate(Object original, Transform parent) { return null; }
+        public static Object Instantiate(Object original) { return null; }
         public static void DontDestroyOnLoad(Object target) { }
+        public static void Destroy(Object obj) { }
+    }
+
+    public struct Rect
+    {
+        public Rect(float x, float y, float width, float height) { }
+        public float x { get { return 0f; } set { } }
+        public float y { get { return 0f; } set { } }
+        public float width { get { return 0f; } set { } }
+        public float height { get { return 0f; } set { } }
+    }
+
+    public struct Color32
+    {
+        public byte r;
+        public byte g;
+        public byte b;
+        public byte a;
+        public Color32(byte r, byte g, byte b, byte a) { this.r = r; this.g = g; this.b = b; this.a = a; }
+    }
+
+    public enum FilterMode { Point = 0, Bilinear = 1, Trilinear = 2 }
+    public enum TextureWrapMode { Repeat = 0, Clamp = 1 }
+    public enum TextureFormat { RGBA32 = 4 }
+    public enum RenderTextureFormat { ARGB32 = 0 }
+    public enum RenderTextureReadWrite { Default = 0, Linear = 1, sRGB = 2 }
+
+    public class Texture : Object
+    {
+        public virtual int width { get { return 0; } set { } }
+        public virtual int height { get { return 0; } set { } }
+        public FilterMode filterMode { get { return default; } set { } }
+        public TextureWrapMode wrapMode { get { return default; } set { } }
+    }
+
+    public sealed class Texture2D : Texture
+    {
+        public Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain) { }
+        public void ReadPixels(Rect source, int destX, int destY) { }
+        public Color32[] GetPixels32() { return null; }
+        public void SetPixels32(Color32[] colors) { }
+        public void Apply() { }
+    }
+
+    public class RenderTexture : Texture
+    {
+        public static RenderTexture active { get { return null; } set { } }
+        public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite) { return null; }
+        public static void ReleaseTemporary(RenderTexture temp) { }
+    }
+
+    public class Graphics
+    {
+        public static void Blit(Texture source, RenderTexture dest) { }
+    }
+
+    public sealed class Sprite : Object
+    {
+        public Rect rect { get { return default; } }
+        public Rect textureRect { get { return default; } }
+        public Vector2 pivot { get { return default; } }
+        public float pixelsPerUnit { get { return 0f; } }
+        public Texture2D texture { get { return null; } }
+        public bool packed { get { return false; } }
+        public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit) { return null; }
     }
 
     public class Component : Object

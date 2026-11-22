@@ -9,8 +9,8 @@ namespace FrostforgedCrescent
     /// <summary>
     /// '서리단조 칼날 : 초승달 식' 무기를 만들어 등록합니다.
     ///
-    /// 게임의 기본 카타나를 템플릿으로 삼아 무기 프리팹을 복제하고, 무기 효과(CrescentAddon)를 붙인 뒤
-    /// '기본 카타나의 강화 무기'로 등록합니다(무녀의 예언 같은 강화 무기와 같은 자리).
+    /// '겨울 대장장이의 습작'의 무기 프리팹을 복제하고, 무기 효과(CrescentAddon)를 붙인 뒤
+    /// 그 무기의 다음 단계 강화 무기로 등록합니다.
     /// 복제한 프리팹은 게임의 RegisterNetworkPrefab 으로 등록해 멀티플레이에서도 생성됩니다.
     /// </summary>
     internal static class WeaponFactory
@@ -33,7 +33,7 @@ namespace FrostforgedCrescent
                 object template = FindTemplate(database);
                 if (template == null)
                 {
-                    Log.Error("기본 카타나를 찾지 못해 무기를 등록하지 못했습니다.");
+                    Log.Error("카타나를 찾지 못해 무기를 등록하지 못했습니다.");
                     return;
                 }
 
@@ -50,14 +50,17 @@ namespace FrostforgedCrescent
             }
         }
 
-        // 기본 무기 중 카타나 종류인 것.
+        private const string ParentPrefabName = "Weapon_Katana_Ice"; // 겨울 대장장이의 습작
+        private static readonly string[] ParentNames = { "겨울 대장장이의 습작", "Winter Smith" };
+
+        // 진화 전 무기: 겨울 대장장이의 습작. 찾지 못하면 기본 카타나로 대신합니다.
         private static object FindTemplate(Type database)
         {
             var all = Reflect.Call(null, database, "GetAll") as IEnumerable;
             if (all == null)
                 return null;
 
-            object fallback = null;
+            object byName = null, basic = null, anyKatana = null;
             foreach (object weapon in all)
             {
                 var main = Reflect.Get(weapon, "mainWeaponPrefab") as GameObject;
@@ -66,19 +69,40 @@ namespace FrostforgedCrescent
                 Component simple = main.GetComponent(typeof(WeaponSimple));
                 if (Reflect.IsNull(simple) || Convert.ToString(Reflect.Get(simple, "weaponType")) != "Katana")
                     continue;
-                if ((bool)Reflect.Get(weapon, "isDefaultWeapon"))
+                string name = DisplayName(weapon);
+                if (ParentNames.Any(n => name.IndexOf(n, StringComparison.OrdinalIgnoreCase) >= 0))
                     return weapon;
-                if (fallback == null)
-                    fallback = weapon;
+                if (byName == null && main.name == ParentPrefabName)
+                    byName = weapon; // 이름으로 못 찾을 때(다른 언어 등)는 프리팹 이름으로
+                if (basic == null && (bool)Reflect.Get(weapon, "isDefaultWeapon"))
+                    basic = weapon;
+                if (anyKatana == null)
+                    anyKatana = weapon;
             }
-            return fallback;
+            if (byName != null)
+                return byName;
+            Log.Warn("'겨울 대장장이의 습작'을 찾지 못해 기본 카타나의 강화 무기로 등록합니다.");
+            return basic ?? anyKatana;
+        }
+
+        private static string DisplayName(object weapon)
+        {
+            try
+            {
+                return Convert.ToString(Reflect.Get(weapon, "aName")) ?? "";
+            }
+            catch (Exception)
+            {
+                return "";
+            }
         }
 
         private static void Build(object template, string packageRoot)
         {
             var templatePrefab = (GameObject)Reflect.Get(template, "mainWeaponPrefab");
             int templateId = (int)Reflect.Get(template, "id");
-            Log.Info("템플릿 무기 #" + templateId + " '" + ((UnityEngine.Object)template).name + "', 프리팹 '" + templatePrefab.name + "'");
+            Log.Info("진화 전 무기 #" + templateId + " '" + ((UnityEngine.Object)template).name + "' (" + DisplayName(template) + "), 프리팹 '" + templatePrefab.name
+                     + "', 무기 효과 " + ((Reflect.Get(templatePrefab.GetComponent(typeof(WeaponSimple)), "addons") as IEnumerable ?? new object[0]).Cast<object>().Count()) + "개 계승");
 
             // 비활성 부모 아래에 복제해 둡니다. 프리팹의 Awake 는 돌지 않고, 게임이 복제해 쓸 때 활성으로 시작합니다.
             if (Reflect.IsNull(holder))
@@ -100,7 +124,7 @@ namespace FrostforgedCrescent
                 return;
             }
 
-            // 무기 효과를 맨 앞에 등록합니다. 템플릿(기본 카타나)의 효과는 그대로 둡니다.
+            // 진화 전 무기의 효과는 그대로 계승하고, 그 뒤에 이 무기의 효과를 붙입니다.
             var addon = (CrescentAddon)prefab.AddComponent(typeof(CrescentAddon));
             addon.parent = (WeaponSimple)simple;
             addon.enabled = true;
@@ -108,17 +132,24 @@ namespace FrostforgedCrescent
 
             var existing = (Reflect.Get(simple, "addons") as IEnumerable ?? new object[0]).Cast<object>().ToList();
             Array addons = Array.CreateInstance(typeof(WeaponAddon), existing.Count + 1);
-            addons.SetValue(addon, 0);
             for (int i = 0; i < existing.Count; i++)
-                addons.SetValue(existing[i], i + 1);
+                addons.SetValue(existing[i], i);
+            addons.SetValue(addon, existing.Count);
             Reflect.Set(simple, "addons", addons);
 
-            ApplyWeaponTint(simple);
+            try
+            {
+                FrameRecolor.Apply(simple);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("전용 프레임을 만들지 못해 원본 그림을 씁니다: " + e);
+            }
 
             if (!HorayModAPI.RegisterNetworkPrefab(prefab, NetworkKey))
                 Log.Warn("네트워크 프리팹 등록에 실패했습니다. 멀티플레이에서 무기가 보이지 않을 수 있습니다.");
 
-            // 무기 데이터: 템플릿의 강화 무기로 등록합니다.
+            // 무기 데이터: 진화 전 무기의 강화 무기로 등록합니다.
             Type entityType = Reflect.GameType("WeaponEntity");
             UnityEngine.Object created = ScriptableObject.CreateInstance(entityType);
             created.name = "FrostforgedCrescent";
@@ -130,7 +161,7 @@ namespace FrostforgedCrescent
             object templateIcon = Reflect.Get(template, "icon");
             object templateBigIcon = Reflect.Get(template, "bigIcon");
             Reflect.Set(created, "icon", SpriteLoader.Load(System.IO.Path.Combine(packageRoot, "Sprites", "icon.png"), templateIcon, "아이콘") ?? templateIcon);
-            Reflect.Set(created, "bigIcon", templateBigIcon); // 기본 카타나와 같이 둡니다(없으면 아이콘이 대신 쓰입니다)
+            Reflect.Set(created, "bigIcon", templateBigIcon); // 진화 전 무기와 같이 둡니다(없으면 아이콘이 대신 쓰입니다)
             Reflect.Set(created, "mainWeaponPrefab", prefab);
             Reflect.Set(created, "subWeaponPrefab", Reflect.Get(template, "subWeaponPrefab"));
             Reflect.Set(created, "standardEnhancements", Activator.CreateInstance(typeof(List<>).MakeGenericType(Reflect.GameType("EnhancementMetadata"))));
@@ -138,22 +169,7 @@ namespace FrostforgedCrescent
             Reflect.Set(created, "enhanceFromId", templateId);
             entity = created;
 
-            Log.Info("무기 #" + WeaponId + " 준비됨 (템플릿 #" + templateId + " 의 강화 무기)");
-        }
-
-        // 손에 든 칼. 카타나의 모습은 여러 장의 애니메이션 그림으로 이루어져 있어 한 장으로 바꿀 수 없습니다.
-        // 대신 본체 그림에 서리빛 색조를 입힙니다.
-        private static void ApplyWeaponTint(Component simple)
-        {
-            object body = Reflect.Get(simple, "mainWeaponBody");
-            object renderer = Reflect.Get(body, "weaponSpriteRenderer");
-            if (Reflect.IsNull(renderer))
-            {
-                Log.Info("무기 색조: 이 무기에는 본체 그림 칸이 없습니다.");
-                return;
-            }
-            Reflect.Set(renderer, "color", new Color(0.62f, 0.88f, 1f, 1f));
-            Log.Info("무기 색조 적용");
+            Log.Info("무기 #" + WeaponId + " 준비됨 (#" + templateId + " 의 강화 무기)");
         }
 
         private static object NewLocalizedString(string key)
