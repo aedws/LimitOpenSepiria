@@ -4,4 +4,3 @@ stubs/**/bin/
 *.pdb
 *.user
 .vs/
-package/frostforged-crescent/FrameDump/*.png

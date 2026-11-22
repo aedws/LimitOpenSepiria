@@ -139,11 +139,11 @@ namespace FrostforgedCrescent
 
             try
             {
-                FrameRecolor.Apply(simple, packageRoot);
+                FrameSet.Apply(simple, packageRoot);
             }
             catch (Exception e)
             {
-                Log.Warn("전용 프레임을 만들지 못해 원본 그림을 씁니다: " + e);
+                Log.Warn("전용 그림을 넣지 못해 원본 그림을 씁니다: " + e);
             }
 
             if (!HorayModAPI.RegisterNetworkPrefab(prefab, NetworkKey))
