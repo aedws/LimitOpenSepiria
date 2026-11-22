@@ -283,6 +283,21 @@ namespace FrostforgedCrescent
             Reflect.Set(renderer, "sprite", tinted);
             if (!Reflect.IsNull(stencil))
                 Reflect.Set(stencil, "sprite", tinted);
+            // 봉류는 무기 그림을 '날 영역(bladeArea)' 크기로 잘라 그립니다(봉 길이 증가 효과 때문).
+            // 그림 크기가 달라졌으니 그 영역도 새 그림 크기에 맞춥니다. 안 맞추면 그림이 잘립니다.
+            object weaponBody = Reflect.Get(simple, "mainWeaponBody");
+            object bladeArea = Reflect.IsNull(weaponBody) ? null : Reflect.Get(weaponBody, "bladeArea");
+            Rect drawn = tinted.rect;
+            var size = new Vector2(drawn.width / tinted.pixelsPerUnit, drawn.height / tinted.pixelsPerUnit);
+            if (!Reflect.IsNull(bladeArea))
+            {
+                object before = Reflect.Get(bladeArea, "size");
+                Reflect.Set(bladeArea, "size", size);
+                Log.Info("블루비틀 날 영역: " + before + " → (" + size.x.ToString("0.###", CultureInfo.InvariantCulture) + ", " + size.y.ToString("0.###", CultureInfo.InvariantCulture) + ")");
+            }
+            foreach (object target in new[] { renderer, stencil })
+                if (!Reflect.IsNull(target) && Convert.ToString(Reflect.Get(target, "drawMode")) != "Simple")
+                    Reflect.Set(target, "size", size);
             foreach (string field in new[] { "rapierFormSprite", "swordFormSprite" })
                 if (!Reflect.IsNull(Reflect.Get(simple, field)))
                     Reflect.Set(simple, field, tinted);
