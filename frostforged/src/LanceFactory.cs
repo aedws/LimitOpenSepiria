@@ -27,6 +27,7 @@ namespace FrostforgedCrescent
         private static readonly string[] LookNames = { "무녀의 예언", "Voluspa", "Völuspá", "Prophecy of the Seeress" };
         private static readonly string[] ParentNames = { "백상의 봉" };
 
+        private const float DefaultShift = 3f; // 전용 그림을 창끝 쪽으로 미는 픽셀 수
         private static GameObject holder;
         private static GameObject prefab;
         private static UnityEngine.Object entity;
@@ -186,6 +187,17 @@ namespace FrostforgedCrescent
             addons.SetValue(addon, kept.Count);
             Reflect.Set(simple, "addons", addons);
 
+            // 공격 이펙트를 얼음빛으로: 공격 데이터를 이 무기 전용으로 복제해 표시해 두고, 색은 무녀의 예언에서 가져옵니다.
+            try
+            {
+                LanceFx.Claim(simple);
+                LanceFx.LearnTint(look == null ? null : Simple(look));
+            }
+            catch (Exception e)
+            {
+                Log.Warn("블루비틀 공격 이펙트 준비 중 오류: " + e);
+            }
+
             try
             {
                 ApplyLook(simple, look == null ? null : Simple(look), packageRoot);
@@ -280,7 +292,9 @@ namespace FrostforgedCrescent
             string customPath = Path.Combine(packageRoot, "Sprites", "lance.png");
             float shift;
             int customHeight = PngHeight(customPath);
-            if (TryNumber(options, "shift", out shift) && customHeight > 0)
+            if (!TryNumber(options, "shift", out shift))
+                shift = DefaultShift;
+            if (customHeight > 0)
                 grip = new Vector2(grip.x, grip.y - shift / customHeight);
             Sprite tinted = SpriteLoader.Load(customPath, source, "블루비틀 창 그림", grip, source.pixelsPerUnit / scale) as Sprite
                             ?? SpriteTint.Bluer(source, pivot, scale);
