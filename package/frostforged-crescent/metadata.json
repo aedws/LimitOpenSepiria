@@ -16,7 +16,7 @@
   "mod": {
     "schemaVersion": 1,
     "modId": "aedws.frostforged-crescent",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "author": "aedws",
     "multiplayer": {
       "installation": "everyone"

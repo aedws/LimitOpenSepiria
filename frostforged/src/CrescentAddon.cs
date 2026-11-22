@@ -16,6 +16,7 @@ namespace FrostforgedCrescent
 
         private Action<int> specialHandler;
         private HipScabbard hip;
+        private SheathAura aura;
         private const string SheathSpeedStat = "SPEEDSHEATH";
         private bool sheathSpeedApplied;
         private object avatar;
@@ -38,6 +39,7 @@ namespace FrostforgedCrescent
                     return;
                 avatar = Reflect.Get(controller, "unitAvatar");
                 hip = HipScabbard.Create(controller as Component, parent as Component);
+                aura = new SheathAura(avatar);
                 // 납도 공격 간격이 공격 속도를 따르게 합니다(게임의 '납도 공격 속도' 능력치를 켭니다).
                 if (IsServer && !sheathSpeedApplied && !Reflect.IsNull(avatar))
                 {
@@ -70,6 +72,9 @@ namespace FrostforgedCrescent
                 if (hip != null)
                     hip.Destroy();
                 hip = null;
+                if (aura != null)
+                    aura.Destroy();
+                aura = null;
                 if (specialHandler != null && !Reflect.IsNull(controller))
                 {
                     var special = Reflect.Get(controller, "OnSpecialAttackSwing") as Action<int>;
@@ -118,11 +123,14 @@ namespace FrostforgedCrescent
         // 애니메이션이 칼을 움직인 뒤에 칼집 위치를 맞춥니다.
         private void LateUpdate()
         {
-            if (hip == null || Reflect.IsNull(parent))
+            if (Reflect.IsNull(parent))
                 return;
             try
             {
-                hip.Update(Equals(Reflect.Get(parent, "isBladeSheathed"), true));
+                if (aura != null)
+                    aura.Set(IsSheathed);
+                if (hip != null)
+                    hip.Update(Equals(Reflect.Get(parent, "isBladeSheathed"), true));
             }
             catch (Exception)
             {
