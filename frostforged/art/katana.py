@@ -46,7 +46,7 @@ def sheathed():
     b={}; sheath(b,BLADE_END); hilt(b); return outline(b)
 def scabbard():
     b={}; sheath(b,BLADE_END); c=col(HABAKI); b[(c,HABAKI)]=G; b[(c+1,HABAKI)]=GD
-    im=outline(b,W,HABAKI+2); return im.crop(im.getbbox())
+    return outline(b)   # 칼과 같은 크기·같은 자리(겹쳐 놓으면 도신을 덮습니다)
 import sys
 d,prevpath=sys.argv[1],sys.argv[2]
 a,s,e=drawn(),sheathed(),scabbard()

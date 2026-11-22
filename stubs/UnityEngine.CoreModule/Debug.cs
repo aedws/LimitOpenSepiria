@@ -108,6 +108,9 @@ namespace UnityEngine
     {
         public Transform parent { get { return null; } set { } }
         public Vector3 localPosition { get { return default; } set { } }
+        public Vector3 position { get { return default; } set { } }
+        public Quaternion rotation { get { return default; } set { } }
+        public Vector3 lossyScale { get { return default; } }
         public Vector3 localEulerAngles { get { return default; } set { } }
         public Vector3 localScale { get { return default; } set { } }
         public int GetSiblingIndex() { return 0; }
@@ -135,6 +138,14 @@ namespace UnityEngine
         public float x;
         public float y;
         public Vector2(float x, float y) { this.x = x; this.y = y; }
+    }
+
+    public struct Quaternion
+    {
+        public float x;
+        public float y;
+        public float z;
+        public float w;
     }
 
     public struct Vector3
