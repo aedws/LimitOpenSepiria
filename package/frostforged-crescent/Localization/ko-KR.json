@@ -1,4 +1,22 @@
 {
   "Weapon_FrostforgedCrescent_Name": "서리단조 칼날 : 초승달 식",
-  "WeaponAddon_FrostforgedCrescent_Effect": "기본 공격이 첫 번째 베기로 고정됩니다. 기본 공격과 납도 공격은 모두 마지막 공격으로 판정됩니다.\n기본 공격을 휘두를 때마다 보유한 축사의 검집이 충전 시간과 관계없이 발동합니다.\n특수 공격이 납도로 바뀝니다. 납도 상태에서는 몸에 서리빛이 감돌며 이동 속도가 60% 증가하고, 납도 공격의 속도가 공격 속도를 따릅니다.\n납도 상태의 공격도 축사의 검집을 발동시키며, 이때 보유한 볼루스파가 조준 방향으로 함께 발동합니다.\n얼음 무구의 추가 발동 효과는 그대로 적용됩니다."
+  "WeaponAddon_FrostforgedCrescent_Effect": "기본 공격이 첫 번째 베기로 고정됩니다. 기본 공격과 납도 공격은 모두 마지막 공격으로 판정됩니다.\n기본 공격을 휘두를 때마다 보유한 축사의 검집이 충전 시간과 관계없이 발동합니다.\n특수 공격이 납도로 바뀝니다. 납도 상태에서는 몸에 서리빛이 감돌며 이동 속도가 60% 증가하고, 납도 공격의 속도가 공격 속도를 따릅니다.\n납도 상태의 공격도 축사의 검집을 발동시키며, 이때 보유한 볼루스파가 조준 방향으로 함께 발동합니다.\n얼음 무구의 추가 발동 효과는 그대로 적용됩니다.",
+  "Item_FFC_FrostBlade_Name": "서리칼날",
+  "Item_FFC_FrostBlade_FlavorText": "서리로 벼린 칼날. 예식용이나 날이 살아있다.",
+  "Item_FFC_Frostmourne2_Name": "서리한 : II형",
+  "Item_FFC_Frostmourne2_FlavorText": "오게 두어라, 서리한은 기다리나니.",
+  "Item_FFC_ScoreNorthWind_Name": "악보 : 북풍",
+  "Item_FFC_ScoreNorthWind_FlavorText": "북풍이 바이킹을 만들었다.",
+  "Item_FFC_BloodstonePendant_Name": "혈석 펜던트",
+  "Item_FFC_BloodstonePendant_FlavorText": "핏빛으로 물든 보석이 이렇게 아름다워도 되나?",
+  "Item_FFC_BloodstoneCross_Name": "혈석 십자가",
+  "Item_FFC_BloodstoneCross_FlavorText": "죄의 사함은 형태를 띄지 않는다.",
+  "Keyword_FFC_IceCrit": "<tag=Elemental_Ice> 공격의 치명타 확률 {VALUE} 증가 (동료 피해 미적용)",
+  "Keyword_FFC_WeaponToIce": "무기 공격의 피해량이 {VALUE} 감소하지만, <tag=IceDamage> 기반으로 변경됩니다.",
+  "Keyword_FFC_HealOnHit": "데미지를 줄 때마다 최대 HP의 0.1/0.25/0.5% 회복 (레벨별)",
+  "Keyword_FFC_LastStand": "매 전투마다 죽음에 이르는 피해를 받을 경우 HP가 1이 되고 3초간 무적",
+  "Keyword_FFC_MaxHpDamage": "무기 공격 적중 시 최대 HP의 {VALUE}만큼 추가 피해 (가장 높은 속성 피해)",
+  "ItemCategory_FFC_Vitality": "생명",
+  "ItemCategory_FFC_Vitality_Fruit": "생명의 열매",
+  "ComboEffect_FFC_Vitality": "생명력이 힘이 됩니다."
 }

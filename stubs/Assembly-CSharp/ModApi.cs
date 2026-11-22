@@ -83,6 +83,10 @@ public static class HorayModAPI
 {
     public static event Action<PlayerAvatar> OnPlayerAvatarSpawnedServerside { add { } remove { } }
     public static event Action OnLoadWeaponDatabase { add { } remove { } }
+    public static event Action OnLoadItemDatabase { add { } remove { } }
+    public static event Action OnLoadStatusDatabase { add { } remove { } }
+    public static event Action OnLoadKeywordDatabase { add { } remove { } }
+    public static UnityEngine.GameObject CreateNetworkPrefab(string name) { return null; }
     public static bool RegisterNetworkPrefab(UnityEngine.GameObject prefab, string stableKey) { return false; }
     public static bool TryGetUIWidgets(out UIWidgetFactory widgets) { widgets = null; return false; }
 }
@@ -109,3 +113,5 @@ public class WeaponAddon : UnityEngine.MonoBehaviour
     protected virtual void OnEnableAddon() { }
     protected virtual void OnDisableAddon() { }
 }
+
+public enum EDamageElementalType { Physical, Fire, Ice, Lightning, Chaos, Normal, IceAndLightning, FireAndIce, FireAndLightning }

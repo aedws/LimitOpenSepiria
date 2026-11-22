@@ -5,18 +5,19 @@
       "en-US": "Frostforged Blade: Crescent Form"
     },
     "description": {
-      "ko-KR": "축사의 검집에 특화된 카타나 '서리단조 칼날 : 초승달 식'을 추가합니다. '겨울 대장장이의 습작'에서 강화할 수 있습니다. 기본 공격을 휘두를 때마다 축사의 검집이 충전 시간과 관계없이 발동합니다.",
-      "en-US": "Adds 'Frostforged Blade: Crescent Form', a katana specialised for the Scabbard of Exorcism, upgraded from the Winter Smith's katana. Every basic attack swing triggers the scabbard regardless of its charge time."
+      "ko-KR": "축사의 검집에 특화된 카타나 '서리단조 칼날 : 초승달 식'을 추가합니다. '겨울 대장장이의 습작'에서 강화할 수 있습니다. 기본 공격을 휘두를 때마다 축사의 검집이 충전 시간과 관계없이 발동합니다. 얼음무구 결속 아티팩트 3종(서리칼날, 서리한 : II형, 악보 : 북풍)과 '생명' 콤보의 아티팩트 2종(혈석 펜던트, 혈석 십자가)도 추가합니다.",
+      "en-US": "Adds 'Frostforged Blade: Crescent Form', a katana specialised for the Scabbard of Exorcism, upgraded from the Winter Smith's katana. Every basic attack swing triggers the scabbard regardless of its charge time. Also adds three Frost Relic bond artifacts and a new Vitality combo with two Bloodstone artifacts."
     },
     "preview": "thumbnail.png"
   },
   "tags": [
-    "Weapon"
+    "Weapon",
+    "Item"
   ],
   "mod": {
     "schemaVersion": 1,
     "modId": "aedws.frostforged-crescent",
-    "version": "0.10.0",
+    "version": "0.11.0",
     "author": "aedws",
     "multiplayer": {
       "installation": "everyone"

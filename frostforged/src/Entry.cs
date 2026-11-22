@@ -17,6 +17,7 @@ namespace FrostforgedCrescent
             packageRoot = Context != null ? Context.PackageRoot : null;
 
             HorayModAPI.OnLoadWeaponDatabase += RegisterWeapon;
+            ItemContent.Hook(packageRoot);
 
             if (harmony == null)
             {
@@ -27,6 +28,7 @@ namespace FrostforgedCrescent
                     MotionLock.Apply(harmony);
                     CharmLink.Apply(harmony);
                     FinalCombo.Apply(harmony);
+                    ItemEffects.Apply(harmony);
                     SoundProbe.Apply(harmony);
                 }
                 catch (Exception e)
@@ -41,6 +43,7 @@ namespace FrostforgedCrescent
         protected override void OnModUnloaded()
         {
             HorayModAPI.OnLoadWeaponDatabase -= RegisterWeapon;
+            ItemContent.Unhook();
             try
             {
                 if (harmony != null)

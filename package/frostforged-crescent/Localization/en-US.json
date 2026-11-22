@@ -1,4 +1,22 @@
 {
   "Weapon_FrostforgedCrescent_Name": "Frostforged Blade: Crescent Form",
-  "WeaponAddon_FrostforgedCrescent_Effect": "Basic attacks are fixed to the first slash. Basic and sheathed attacks all count as the final combo attack.\nEvery basic attack swing triggers your Scabbard of Exorcism regardless of its charge time.\nThe special attack becomes Sheathe. While sheathed, a frost glow surrounds you, movement speed is increased by 60% and sheathed attacks scale with attack speed.\nAttacks from the sheathed stance also trigger the Scabbard of Exorcism, and your Voluspa fires along with it toward your aim.\nExtra-trigger effects of Ice Armaments still apply."
+  "WeaponAddon_FrostforgedCrescent_Effect": "Basic attacks are fixed to the first slash. Basic and sheathed attacks all count as the final combo attack.\nEvery basic attack swing triggers your Scabbard of Exorcism regardless of its charge time.\nThe special attack becomes Sheathe. While sheathed, a frost glow surrounds you, movement speed is increased by 60% and sheathed attacks scale with attack speed.\nAttacks from the sheathed stance also trigger the Scabbard of Exorcism, and your Voluspa fires along with it toward your aim.\nExtra-trigger effects of Ice Armaments still apply.",
+  "Item_FFC_FrostBlade_Name": "Frost Blade",
+  "Item_FFC_FrostBlade_FlavorText": "A blade tempered in frost. Ceremonial, yet its edge is alive.",
+  "Item_FFC_Frostmourne2_Name": "Frostmourne: Type II",
+  "Item_FFC_Frostmourne2_FlavorText": "Let them come. Frostmourne waits.",
+  "Item_FFC_ScoreNorthWind_Name": "Score: North Wind",
+  "Item_FFC_ScoreNorthWind_FlavorText": "The north wind made the Vikings.",
+  "Item_FFC_BloodstonePendant_Name": "Bloodstone Pendant",
+  "Item_FFC_BloodstonePendant_FlavorText": "Should a gem stained this red be allowed to be so beautiful?",
+  "Item_FFC_BloodstoneCross_Name": "Bloodstone Cross",
+  "Item_FFC_BloodstoneCross_FlavorText": "Absolution takes no shape.",
+  "Keyword_FFC_IceCrit": "Critical chance of <tag=Elemental_Ice> attacks increased by {VALUE} (not applied to companion damage)",
+  "Keyword_FFC_WeaponToIce": "Weapon attack damage is reduced by {VALUE}, but becomes based on <tag=IceDamage>.",
+  "Keyword_FFC_HealOnHit": "Recover 0.1/0.25/0.5% of max HP whenever you deal damage (by level)",
+  "Keyword_FFC_LastStand": "Once per battle, when taking lethal damage, HP becomes 1 and you are invulnerable for 3 seconds",
+  "Keyword_FFC_MaxHpDamage": "Weapon hits deal extra damage equal to {VALUE} of max HP (highest elemental damage)",
+  "ItemCategory_FFC_Vitality": "Vitality",
+  "ItemCategory_FFC_Vitality_Fruit": "Fruit of Vitality",
+  "ComboEffect_FFC_Vitality": "Vitality becomes power."
 }
