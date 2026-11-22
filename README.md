@@ -145,3 +145,16 @@ stubs/                        컴파일 전용 스텁 (배포물에 포함되지
 아이템 데이터는 메서드가 끝나면 원래 값으로 복원되므로 분수 밖(상점, 보상, 도감)에는 영향이 없습니다.
 게임 내부 타입은 이름으로 찾아 접근하므로, 게임 업데이트로 대상이 바뀌면 해당 기능만 꺼지고 로그에 경고가 남습니다.
 게임 1.1.x의 `Assembly-CSharp.dll`을 기준으로 작성했습니다.
+
+## 두 번째 모드: 서리단조 칼날 : 초승달 식 (개발 중)
+
+`frostforged/src`와 `package/frostforged-crescent/`에 있는 별도 모드입니다. 축사의 검집에 특화된 카타나 강화 무기를 추가합니다.
+
+```bash
+dotnet build frostforged/src/FrostforgedCrescent.csproj -c Release
+```
+
+- 기본 카타나의 무기 프리팹을 복제해 강화 무기로 등록하고, 무기 효과 컴포넌트(`CrescentAddon`)를 붙입니다.
+- 이 무기를 들고 있으면 축사의 검집(`Charm_AirSlash`)이 충전 여부와 관계없이 기본 공격마다 발동합니다.
+- `package/frostforged-crescent/Sprites/`에 `icon.png`, `icon_big.png`, `weapon.png`를 넣으면 그림이 바뀝니다.
+- 공격 모션을 첫 번째 베기로 고정하는 기능은 아직 없습니다. 0.1.0은 그 구현에 필요한 애니메이션 정보를 로그(`[FrostforgedCrescent]`)로 남깁니다.

@@ -1,0 +1,36 @@
+{
+  "info": {
+    "title": {
+      "ko-KR": "서리단조 칼날 : 초승달 식",
+      "en-US": "Frostforged Blade: Crescent Form"
+    },
+    "description": {
+      "ko-KR": "축사의 검집에 특화된 카타나 강화 무기 '서리단조 칼날 : 초승달 식'을 추가합니다. 기본 공격을 휘두를 때마다 축사의 검집이 충전 시간과 관계없이 발동합니다.",
+      "en-US": "Adds 'Frostforged Blade: Crescent Form', a katana upgrade specialised for the Scabbard of Exorcism. Every basic attack swing triggers the scabbard regardless of its charge time."
+    },
+    "preview": "thumbnail.png"
+  },
+  "tags": [
+    "Weapon"
+  ],
+  "mod": {
+    "schemaVersion": 1,
+    "modId": "aedws.frostforged-crescent",
+    "version": "0.1.0",
+    "author": "aedws",
+    "multiplayer": {
+      "installation": "everyone"
+    },
+    "modules": [
+      {
+        "type": "dll",
+        "path": "bin/FrostforgedCrescent.dll",
+        "entryClass": "FrostforgedCrescent.Entry"
+      },
+      {
+        "type": "localization",
+        "path": "Localization"
+      }
+    ]
+  }
+}

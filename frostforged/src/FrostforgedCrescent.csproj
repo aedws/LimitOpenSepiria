@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>FrostforgedCrescent</AssemblyName>
+    <RootNamespace>FrostforgedCrescent</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>none</DebugType>
+    <Deterministic>true</Deterministic>
+    <Version>0.1.0</Version>
+    <!--
+      게임 설치 폴더를 넘기면 실제 게임 DLL을 참조해 빌드합니다(권장).
+        dotnet build -c Release -p:GameDir="C:\Program Files (x86)\Steam\steamapps\common\Sephiria"
+      넘기지 않으면 stubs/ 의 컴파일 전용 스텁과 NuGet의 Harmony 참조로 빌드합니다.
+    -->
+    <UseGameDlls Condition="'$(GameDir)' != '' And Exists('$(GameDir)\Sephiria_Data\Managed\Assembly-CSharp.dll')">true</UseGameDlls>
+    <OutDir Condition="'$(OutDir)' == ''">$(MSBuildThisFileDirectory)..\..\package\frostforged-crescent\bin\</OutDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseGameDlls)' == 'true'">
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameDir)\Sephiria_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameDir)\Sephiria_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Mirror">
+      <HintPath>$(GameDir)\Sephiria_Data\Managed\Mirror.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI" Condition="Exists('$(GameDir)\Sephiria_Data\Managed\UnityEngine.UI.dll')">
+      <HintPath>$(GameDir)\Sephiria_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(GameDir)\Sephiria_Data\Managed\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseGameDlls)' != 'true'">
+    <ProjectReference Include="..\..\stubs\Assembly-CSharp\Assembly-CSharp.csproj" Private="false" />
+    <ProjectReference Include="..\..\stubs\UnityEngine.CoreModule\UnityEngine.CoreModule.csproj" Private="false" />
+    <!-- 게임에 Harmony가 내장되어 있으므로 컴파일 참조로만 쓰고 출력에는 복사하지 않습니다. -->
+    <PackageReference Include="Lib.Harmony" Version="2.4.2" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

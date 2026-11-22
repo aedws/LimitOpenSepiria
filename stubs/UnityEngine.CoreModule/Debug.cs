@@ -13,6 +13,7 @@ namespace UnityEngine
     {
         public string name { get { return null; } set { } }
         public static Object Instantiate(Object original, Transform parent) { return null; }
+        public static void DontDestroyOnLoad(Object target) { }
     }
 
     public class Component : Object
@@ -21,6 +22,20 @@ namespace UnityEngine
         public GameObject gameObject { get { return null; } }
         public Component GetComponent(System.Type type) { return null; }
         public Component[] GetComponents(System.Type type) { return null; }
+    }
+
+    public class Behaviour : Component
+    {
+        public bool enabled { get { return false; } set { } }
+    }
+
+    public class MonoBehaviour : Behaviour
+    {
+    }
+
+    public class ScriptableObject : Object
+    {
+        public static ScriptableObject CreateInstance(System.Type type) { return null; }
     }
 
     public class Transform : Component

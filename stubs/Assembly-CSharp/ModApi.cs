@@ -82,6 +82,8 @@ public class PlayerAvatar
 public static class HorayModAPI
 {
     public static event Action<PlayerAvatar> OnPlayerAvatarSpawnedServerside { add { } remove { } }
+    public static event Action OnLoadWeaponDatabase { add { } remove { } }
+    public static bool RegisterNetworkPrefab(UnityEngine.GameObject prefab, string stableKey) { return false; }
     public static bool TryGetUIWidgets(out UIWidgetFactory widgets) { widgets = null; return false; }
 }
 
@@ -94,4 +96,16 @@ public sealed class UIWidgetFactory
     public UnityEngine.RectTransform CreateHorizontalLayout(UnityEngine.Transform parent, float spacing = 4f) { return null; }
     public UI_HorayButton CreateButton(UnityEngine.Transform parent, string label, UnityEngine.Events.UnityAction onClick) { return null; }
     public static void SetPreferredSize(UnityEngine.Component widget, float width, float height, float flexibleHeight = 0f) { }
+}
+
+public class WeaponSimple : UnityEngine.MonoBehaviour
+{
+}
+
+// 실제 게임에서는 Mirror.NetworkBehaviour 를 상속합니다. 스텁은 이 모드가 쓰는 멤버만 둡니다.
+public class WeaponAddon : UnityEngine.MonoBehaviour
+{
+    public WeaponSimple parent;
+    protected virtual void OnEnableAddon() { }
+    protected virtual void OnDisableAddon() { }
 }
