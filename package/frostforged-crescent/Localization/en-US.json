@@ -23,5 +23,16 @@
   "Weapon_FFC_BlueBeetle_Name": "Frost Rider : Lance Blue Beetle",
   "WeaponAddon_FFC_BlueBeetle_Effect": "Attack speed +20%. Weapon attacks have a 20% chance to inflict Frostbite.\nBasic Attack: Thrust repeats only its 3rd, 4th and 5th hits.\nOn hit, your Völuspá fires toward the aim at half damage. It ignores Völuspá's charge time, and extra activations of ice armaments apply.\nThe special attack deals no damage and parries for 0.5s as its motion begins. A successful parry grants 3 Fury (up to 9).\nWith Fury, the special attack spends 1 Fury to use [Breakthrough]: dash toward the aim with a thrust (counts as a special attack), invincible until the dash ends.",
   "EffectHUD_FFC_Fury_Name": "Fury",
-  "EffectHUD_FFC_Fury_FlavorText": "Power gained from a successful parry. Press the special attack to spend 1 and use [Breakthrough]."
+  "EffectHUD_FFC_Fury_FlavorText": "Power gained from a successful parry. Press the special attack to spend 1 and use [Breakthrough].",
+  "Item_FFC_FrostWingFeather_Name": "Frostwind Pinion",
+  "Item_FFC_FrostWingFeather_FlavorText": "A feather of the divine beast that once guarded the north wind.",
+  "Item_FFC_Erindanua_Name": "First Spear : Erindanua",
+  "Item_FFC_Erindanua_FlavorText": "It serves the Queen of Paradise.",
+  "Keyword_FFC_BreakInvul": "Breakthrough invincibility +{VALUE}s",
+  "Keyword_FFC_ParryTime": "Parry window +{VALUE}s",
+  "Keyword_FFC_FuryGain": "Gain {VALUE} extra Fury whenever you gain Fury",
+  "Keyword_FFC_LanceDash": "Dash recovery speed +{VALUE}",
+  "Keyword_FFC_LanceIceCrit": "Critical chance of <tag=Elemental_Ice> attacks +{VALUE}",
+  "Keyword_FFC_LanceIceCritDmg": "Critical damage of <tag=Elemental_Ice> attacks +{VALUE}",
+  "Keyword_FFC_LanceOnly": "Frost Rider : Lance Blue Beetle only"
 }

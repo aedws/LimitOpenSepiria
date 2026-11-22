@@ -23,11 +23,11 @@ namespace FrostforgedCrescent
 
         private static Type avatarType;
         private static MethodInfo getStat, healPercent, getFormula, getDamage, applyDamage, tempInvulnerable;
-        private static FieldInfo origin, elemental, critChance, damageResult, damageId, fromType, factionLayers, isDead;
+        private static FieldInfo origin, elemental, critChance, critDamageRate, damageResult, damageId, fromType, factionLayers, isDead;
         private static PropertyInfo maxHp;
         private static bool inExtraDamage;
         private static bool loggedFailure;
-        private static readonly bool[] Logged = new bool[5];
+        private static readonly bool[] Logged = new bool[8];
 
         public static void Apply(Harmony harmony)
         {
@@ -52,6 +52,7 @@ namespace FrostforgedCrescent
             origin = damage.GetField("origin", Reflect.Any);
             elemental = damage.GetField("elementalType", Reflect.Any);
             critChance = damage.GetField("criticalChancePercent", Reflect.Any);
+            critDamageRate = damage.GetField("criticalDamageRate", Reflect.Any);
             damageResult = damage.GetField("damageResult", Reflect.Any);
             damageId = damage.GetField("id", Reflect.Any);
             fromType = damage.GetField("fromType", Reflect.Any);
@@ -88,7 +89,7 @@ namespace FrostforgedCrescent
             Log.Info("아티팩트 효과 패치 적용");
         }
 
-        private static int Stat(object avatar, string key)
+        public static int Stat(object avatar, string key)
         {
             return (int)getStat.Invoke(avatar, new object[] { key });
         }
@@ -126,11 +127,25 @@ namespace FrostforgedCrescent
                 object attacker = origin.GetValue(damage);
                 if (Reflect.IsNull(attacker) || !avatarType.IsInstanceOfType(attacker))
                     return;
-                int bonus = Stat(attacker, ItemContent.IceCrit);
-                if (bonus <= 0 || !IsIce(elemental.GetValue(damage)))
+                if (!IsIce(elemental.GetValue(damage)))
                     return;
-                critChance.SetValue(damage, (float)critChance.GetValue(damage) + bonus);
-                LogOnce(0, "얼음 속성 치명타 확률 +" + bonus + "% 적용 확인");
+                int bonus = Stat(attacker, ItemContent.IceCrit);
+                int critDamage = 0;
+                if (LanceAddon.IsWielding(attacker)) // 블루비틀 전용 아티팩트
+                {
+                    bonus += Stat(attacker, ItemContent.LanceIceCrit);
+                    critDamage = Stat(attacker, ItemContent.LanceIceCritDamage);
+                }
+                if (bonus > 0)
+                {
+                    critChance.SetValue(damage, (float)critChance.GetValue(damage) + bonus);
+                    LogOnce(0, "얼음 속성 치명타 확률 +" + bonus + "% 적용 확인");
+                }
+                if (critDamage > 0 && critDamageRate != null)
+                {
+                    critDamageRate.SetValue(damage, (int)critDamageRate.GetValue(damage) + critDamage);
+                    LogOnce(6, "얼음 속성 치명타 피해 +" + critDamage + "% 적용 확인");
+                }
             }
             catch (Exception e)
             {

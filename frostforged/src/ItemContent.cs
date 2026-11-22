@@ -25,6 +25,13 @@ namespace FrostforgedCrescent
         public const string HealOnHit = "FFCHEALONHIT";
         public const string LastStand = "FFCLASTSTAND";
         public const string MaxHpDamage = "FFCMAXHPDAMAGE";
+        // 블루비틀 전용 아티팩트의 능력치(블루비틀을 들고 있을 때만 읽습니다)
+        public const string BreakInvulnerable = "FFCBREAKINVUL"; // 0.01초 단위
+        public const string ParryTime = "FFCPARRYTIME";          // 0.01초 단위
+        public const string FuryGain = "FFCFURYGAIN";
+        public const string LanceDash = "FFCLANCEDASH";
+        public const string LanceIceCrit = "FFCLANCEICECRIT";
+        public const string LanceIceCritDamage = "FFCLANCEICECRITDMG";
 
         private sealed class CustomStat
         {
@@ -40,6 +47,13 @@ namespace FrostforgedCrescent
             new CustomStat { Id = "FFC_HEAL_ON_HIT", Key = HealOnHit, Keyword = "FFC_HealOnHit", Symbol = "%", ShowValue = true, Divide = 100 }, // 값 10 = 0.1%
             new CustomStat { Id = "FFC_LAST_STAND", Key = LastStand, Keyword = "FFC_LastStand", Symbol = "", ShowValue = false },
             new CustomStat { Id = "FFC_MAXHP_DAMAGE", Key = MaxHpDamage, Keyword = "FFC_MaxHpDamage", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_BREAK_INVUL", Key = BreakInvulnerable, Keyword = "FFC_BreakInvul", Symbol = "", ShowValue = true, Divide = 100 },
+            new CustomStat { Id = "FFC_PARRY_TIME", Key = ParryTime, Keyword = "FFC_ParryTime", Symbol = "", ShowValue = true, Divide = 100 },
+            new CustomStat { Id = "FFC_FURY_GAIN", Key = FuryGain, Keyword = "FFC_FuryGain", Symbol = "", ShowValue = true },
+            new CustomStat { Id = "FFC_LANCE_DASH", Key = LanceDash, Keyword = "FFC_LanceDash", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_LANCE_ICE_CRIT", Key = LanceIceCrit, Keyword = "FFC_LanceIceCrit", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_LANCE_ICE_CRITDMG", Key = LanceIceCritDamage, Keyword = "FFC_LanceIceCritDmg", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_LANCE_ONLY", Key = "FFCLANCEONLY", Keyword = "FFC_LanceOnly", Symbol = "", ShowValue = false },
         };
 
         private sealed class Stat
@@ -57,6 +71,14 @@ namespace FrostforgedCrescent
                 Values = new int[values.Length + 1];
                 Values[0] = keepAtZero ? values[0] : (values[0] + 1) / 2;
                 Array.Copy(values, 0, Values, 1, values.Length);
+            }
+
+            /// <summary>0레벨부터의 값을 그대로 씁니다.</summary>
+            public static Stat Exact(string id, bool hideZero, params int[] values)
+            {
+                var stat = new Stat(id, hideZero, true, 0);
+                stat.Values = values;
+                return stat;
             }
         }
 
@@ -120,7 +142,31 @@ namespace FrostforgedCrescent
                     new Stat("FFC_LAST_STAND", false, true, 1, 1, 1),
                 }
             },
+            new Item
+            {
+                Id = 9101416, Name = "FrostWingFeather", Categories = new[] { "WINDSONG" },
+                Stats = new[]
+                {
+                    new Stat("FFC_BREAK_INVUL", false, 10, 20, 20, 20, 30), // 0.1 / 0.2 / 0.2 / 0.2 / 0.3초
+                    new Stat("FFC_PARRY_TIME", false, 10, 10, 10, 20, 30),  // 0.1 / 0.1 / 0.1 / 0.2 / 0.3초
+                    new Stat("FFC_LANCE_ONLY", false, true, 1, 1, 1, 1, 1),
+                }
+            },
+            new Item
+            {
+                Id = 9101417, Name = "Erindanua", Bond = true, Categories = new[] { "FROST", "PRECISION" },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_FURY_GAIN", true, 0, 0, 1, 2),
+                    Stat.Exact("FFC_LANCE_DASH", false, 5, 10, 10, 20),
+                    Stat.Exact("FFC_LANCE_ICE_CRIT", false, 5, 5, 10, 20),
+                    Stat.Exact("FFC_LANCE_ICE_CRITDMG", false, 10, 20, 30, 50),
+                    Stat.Exact("FFC_LANCE_ONLY", false, 1, 1, 1, 1),
+                }
+            },
         };
+
+        // ↑ 아래 둘은 '서리기수 : 돌격창 블루비틀' 전용입니다(효과는 블루비틀을 들고 있을 때만 적용).
 
         // 기존 아티팩트 '혈석 귀걸이'에 생명 콤보를 붙입니다. 아이템 ID 가 코드에 없어 이름으로 찾습니다.
         private static readonly string[] EarringNames = { "혈석 귀걸이", "Bloodstone Earring" };

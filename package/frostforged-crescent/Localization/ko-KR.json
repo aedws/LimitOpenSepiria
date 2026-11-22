@@ -23,5 +23,16 @@
   "Weapon_FFC_BlueBeetle_Name": "서리기수 : 돌격창 블루비틀",
   "WeaponAddon_FFC_BlueBeetle_Effect": "공격 속도가 20% 증가합니다. 무기 공격 시 20% 확률로 동상을 부여합니다.\n일반공격: 창격의 3·4·5타만 반복합니다.\n공격 적중 시 보유한 볼루스파가 절반 피해로 조준 방향에 발동합니다. 볼루스파의 충전 시간과 관계없이 발동하며, 얼음 무구의 추가 발동 효과가 적용됩니다.\n특수 공격은 피해를 주지 않고, 동작이 시작될 때 0.5초 동안 패링 판정이 생깁니다. 패링에 성공하면 퓨리를 3개 얻습니다(최대 9개).\n퓨리가 있을 때 특수 공격을 누르면 퓨리 1개를 써서 [돌파]를 사용합니다: 조준 방향으로 돌진하며 찌르고(특수 공격 판정), 돌진이 끝날 때까지 무적입니다.",
   "EffectHUD_FFC_Fury_Name": "퓨리",
-  "EffectHUD_FFC_Fury_FlavorText": "패링에 성공해 얻은 힘. 특수 공격을 누르면 1개를 써서 [돌파]를 사용합니다."
+  "EffectHUD_FFC_Fury_FlavorText": "패링에 성공해 얻은 힘. 특수 공격을 누르면 1개를 써서 [돌파]를 사용합니다.",
+  "Item_FFC_FrostWingFeather_Name": "서리 바람의 날개깃",
+  "Item_FFC_FrostWingFeather_FlavorText": "한때에는 북풍을 수호하던 신수의 깃털",
+  "Item_FFC_Erindanua_Name": "일번창 : 에린다누아",
+  "Item_FFC_Erindanua_FlavorText": "낙원의 여왕을 섬깁니다.",
+  "Keyword_FFC_BreakInvul": "돌파 시 무적 시간 +{VALUE}초",
+  "Keyword_FFC_ParryTime": "패링 판정 시간 +{VALUE}초",
+  "Keyword_FFC_FuryGain": "돌파(퓨리) 획득 시 {VALUE}개 추가 획득",
+  "Keyword_FFC_LanceDash": "대시 회복 속도 +{VALUE}",
+  "Keyword_FFC_LanceIceCrit": "<tag=Elemental_Ice> 공격의 치명타 확률 {VALUE} 증가",
+  "Keyword_FFC_LanceIceCritDmg": "<tag=Elemental_Ice> 공격의 치명타 피해 {VALUE} 증가",
+  "Keyword_FFC_LanceOnly": "서리기수 : 돌격창 블루비틀 전용"
 }

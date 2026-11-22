@@ -56,6 +56,7 @@ namespace FrostforgedCrescent
                 Wielders.Remove(avatar);
                 Addons.Remove(this);
                 LanceParry.Clear(avatar);
+                SetDashBonus(0);
                 if (statApplied)
                     AddAttackSpeed(-AttackSpeedBonus);
                 statApplied = false;
@@ -66,13 +67,47 @@ namespace FrostforgedCrescent
             }
         }
 
+        // 전용 아티팩트의 '대시 회복 속도': 블루비틀을 들고 있는 동안만 실제 능력치에 반영합니다(서버).
+        private int dashApplied;
+        private float dashCheck;
+
+        private void Update()
+        {
+            if (!statApplied || Reflect.IsNull(avatar))
+                return;
+            dashCheck -= Time.deltaTime;
+            if (dashCheck > 0f)
+                return;
+            dashCheck = 0.25f;
+            try
+            {
+                SetDashBonus(Math.Max(0, ItemEffects.Stat(avatar, ItemContent.LanceDash)));
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private void SetDashBonus(int value)
+        {
+            if (value == dashApplied || Reflect.IsNull(avatar))
+                return;
+            if (AddStat("DashRecovery", value - dashApplied))
+                dashApplied = value;
+        }
+
         private bool AddAttackSpeed(int value)
+        {
+            return AddStat("AttackSpeed", value);
+        }
+
+        private bool AddStat(string name, int value)
         {
             Type stat = Reflect.GameType("ECustomStat");
             MethodInfo add = stat == null || Reflect.IsNull(avatar) ? null : avatar.GetType().GetMethod("AddCustomStat", new[] { stat, typeof(int) });
             if (add == null)
                 return false;
-            add.Invoke(avatar, new[] { Enum.Parse(stat, "AttackSpeed"), value });
+            add.Invoke(avatar, new[] { Enum.Parse(stat, name), value });
             return true;
         }
 

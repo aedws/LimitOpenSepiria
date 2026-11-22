@@ -104,6 +104,36 @@ ART={
 "...ogu...",
 "....u....",
 ],
+# 블루비틀 전용: 서리 바람의 날개깃
+'FrostWingFeather':[
+"..........WW.",
+"........WWcc.",
+".......Wccb..",
+"......WccbW..",
+".....WcbbWc..",
+"....WcbWWcb..",
+"...WcbWccb...",
+"..WcbsWcb....",
+"..cbs.cb.....",
+".sbs.........",
+".S...........",
+"S............",
+],
+# 블루비틀 전용: 일번창 : 에린다누아
+'Erindanua':[
+"...........WW",
+"..........Wcb",
+".........Wcb.",
+"......g.Wcb..",
+".......gcb...",
+"......agg....",
+".....S...g...",
+"....k........",
+"...S.........",
+"..k..........",
+".g...........",
+"g............",
+],
 'Vitality':[
 ".prr...rrR.",
 "prWrr.rrRRd",
@@ -130,8 +160,8 @@ def render(rows):
     for (x,y),c in body.items(): px[x,y]=c
     return im
 out,prev=sys.argv[1],sys.argv[2]
-sheet=Image.new('RGBA',(len(ART)*170,220),(70,90,90,255))
+sheet=Image.new('RGBA',(len(ART)*150,220),(70,90,90,255))
 for i,(name,rows) in enumerate(ART.items()):
     im=render(rows); im.save(out+name+'.png')
-    b=im.resize((im.width*8,im.height*8),Image.NEAREST); sheet.paste(b,(i*170+4,8),b)
+    b=im.resize((im.width*8,im.height*8),Image.NEAREST); sheet.paste(b,(i*150+4,8),b)
 sheet.save(prev)

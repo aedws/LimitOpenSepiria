@@ -97,6 +97,19 @@ namespace FrostforgedCrescent
             Log.Error("블루비틀 패링 처리 중 오류(" + where + ", 이후 같은 오류는 기록하지 않습니다): " + e);
         }
 
+        // 전용 아티팩트의 능력치(없으면 0)
+        private static int Bonus(object avatar, string key)
+        {
+            try
+            {
+                return Math.Max(0, ItemEffects.Stat(avatar, key));
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         private static bool IsLance(Component weapon)
         {
             return !Reflect.IsNull(weapon) && !Reflect.IsNull(weapon.GetComponent(typeof(LanceAddon)));
@@ -149,11 +162,12 @@ namespace FrostforgedCrescent
                 if (state.ArmedTicks == 0 || DateTime.UtcNow.Ticks - state.ArmedTicks > 2 * TimeSpan.TicksPerSecond)
                     return;
                 state.ArmedTicks = 0; // 한 번의 우클릭에 한 번만(특수 공격의 두 번째 휘두르기에는 걸지 않습니다)
-                Reflect.Call(controller, null, "StartParryInvincible", ParryWindow);
+                float window = ParryWindow + Bonus(avatar, ItemContent.ParryTime) / 100f;
+                Reflect.Call(controller, null, "StartParryInvincible", window);
                 if (!loggedParry)
                 {
                     loggedParry = true;
-                    Log.Info("블루비틀 패링 발동 확인 (판정 " + ParryWindow + "초)");
+                    Log.Info("블루비틀 패링 발동 확인 (판정 " + window + "초)");
                 }
             }
             catch (Exception e)
@@ -170,7 +184,7 @@ namespace FrostforgedCrescent
                 if (LanceAddon.Find(__instance) == null)
                     return;
                 State state = States.GetOrCreateValue(__instance);
-                SetFury(__instance, state, Math.Min(MaxFury, state.Fury + FuryPerParry));
+                SetFury(__instance, state, Math.Min(MaxFury, state.Fury + FuryPerParry + Bonus(__instance, ItemContent.FuryGain)));
                 if (!loggedFury)
                 {
                     loggedFury = true;
@@ -354,7 +368,7 @@ namespace FrostforgedCrescent
                 create.Invoke(weapon, new[] { data, position, (object)new Vector3(dx, dy, 0f), null, 0f, 0, 0, 0, BreakDamage });
 
             // 돌진하는 동안 무적(단검 퓨리의 무적). 돌진보다 조금 길게 잡아 끝나는 지점까지 덮습니다.
-            Reflect.Call(controller, null, "StartFuryInvincible", DashTime + 0.08f);
+            Reflect.Call(controller, null, "StartFuryInvincible", DashTime + 0.08f + Bonus(avatar, ItemContent.BreakInvulnerable) / 100f);
             MethodInfo dash = avatar.GetType().GetMethods(Reflect.Any).FirstOrDefault(m => m.Name == "SetAttackDash" && m.GetParameters().Length == 3);
             if (dash != null)
                 dash.Invoke(avatar, new[] { (object)new Vector3(nx * DashSpeed, ny * DashSpeed, 0f), Enum.ToObject(dash.GetParameters()[1].ParameterType, 1), DashTime }); // 1 = Uniform
