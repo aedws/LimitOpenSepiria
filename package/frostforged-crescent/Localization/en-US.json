@@ -13,7 +13,7 @@
   "Item_FFC_BloodstoneCross_FlavorText": "Absolution takes no shape.",
   "Keyword_FFC_IceCrit": "Critical chance of <tag=Elemental_Ice> attacks increased by {VALUE} (not applied to companion damage)",
   "Keyword_FFC_WeaponToIce": "Weapon attack damage is reduced by {VALUE}, but becomes based on <tag=IceDamage>.",
-  "Keyword_FFC_HealOnHit": "Recover 0.1/0.25/0.5% of max HP whenever you deal damage (by level)",
+  "Keyword_FFC_HealOnHit": "Recover {VALUE} of max HP whenever you deal damage",
   "Keyword_FFC_LastStand": "Once per battle, when taking lethal damage, HP becomes 1 and you are invulnerable for 3 seconds",
   "Keyword_FFC_MaxHpDamage": "Weapon hits deal extra damage equal to {VALUE} of max HP (highest elemental damage)",
   "ItemCategory_FFC_Vitality": "Vitality",

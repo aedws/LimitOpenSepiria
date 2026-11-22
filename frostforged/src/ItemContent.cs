@@ -30,13 +30,14 @@ namespace FrostforgedCrescent
         {
             public string Id, Key, Keyword, Symbol;
             public bool ShowValue;
+            public int Divide = 1;   // 표시할 때 나누는 수
         }
 
         private static readonly CustomStat[] CustomStats =
         {
             new CustomStat { Id = "FFC_ICE_CRIT", Key = IceCrit, Keyword = "FFC_IceCrit", Symbol = "%", ShowValue = true },
             new CustomStat { Id = "FFC_WEAPON_TO_ICE", Key = WeaponToIce, Keyword = "FFC_WeaponToIce", Symbol = "%", ShowValue = true },
-            new CustomStat { Id = "FFC_HEAL_ON_HIT", Key = HealOnHit, Keyword = "FFC_HealOnHit", Symbol = "", ShowValue = false },
+            new CustomStat { Id = "FFC_HEAL_ON_HIT", Key = HealOnHit, Keyword = "FFC_HealOnHit", Symbol = "%", ShowValue = true, Divide = 100 }, // 값 10 = 0.1%
             new CustomStat { Id = "FFC_LAST_STAND", Key = LastStand, Keyword = "FFC_LastStand", Symbol = "", ShowValue = false },
             new CustomStat { Id = "FFC_MAXHP_DAMAGE", Key = MaxHpDamage, Keyword = "FFC_MaxHpDamage", Symbol = "%", ShowValue = true },
         };
@@ -96,7 +97,7 @@ namespace FrostforgedCrescent
                 Id = 9101414, Name = "BloodstonePendant", Categories = new[] { VitalityCategory },
                 Stats = new[]
                 {
-                    new Stat("FFC_HEAL_ON_HIT", false, 10, 25, 50), // 0.01% 단위
+                    new Stat("FFC_HEAL_ON_HIT", false, 10, 30, 50), // 0.01% 단위: 0.1 / 0.3 / 0.5%
                     new Stat("FINAL_HP", false, 10, 20, 30),
                 }
             },
@@ -186,6 +187,7 @@ namespace FrostforgedCrescent
                         Reflect.Set(status, "includePositiveNegativeSign", false);
                         Reflect.Set(status, "displayValue", stat.ShowValue);
                         Reflect.Set(status, "symbol", stat.Symbol);
+                        Reflect.Set(status, "divideForDisplay", stat.Divide);
                         Statuses[stat.Id] = status;
                     }
                     Reflect.Call(null, Reflect.GameType("StatusDatabase"), "Register", status);
