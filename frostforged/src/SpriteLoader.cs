@@ -37,7 +37,8 @@ namespace FrostforgedCrescent
 
                 object texture = Activator.CreateInstance(textureType, 2, 2);
                 MethodInfo loadImage = conversion.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                    .First(m => m.Name == "LoadImage" && m.GetParameters().Length == 2);
+                    .First(m => m.Name == "LoadImage" && m.GetParameters().Length == 2
+                                && m.GetParameters()[1].ParameterType == typeof(byte[])); // Unity 6 에는 ReadOnlySpan 판도 있습니다
                 if (!(bool)loadImage.Invoke(null, new[] { texture, File.ReadAllBytes(path) }))
                 {
                     Log.Warn(label + ": PNG 를 읽지 못했습니다 (" + Path.GetFileName(path) + ").");

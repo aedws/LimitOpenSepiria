@@ -64,6 +64,8 @@ namespace FrostforgedCrescent
                 var text = new StringBuilder("공격 시작 fireId=" + fireId);
                 text.Append(" attackMoveSet=").Append(Reflect.Get(parent, "attackMoveSet"));
                 text.Append(" finalComboIdx=").Append(Reflect.Get(parent, "finalComboIdx"));
+                object driver = Reflect.Get(controller, "AnimationDriver");
+                text.Append(" driver=").Append(driver == null ? "(없음)" : driver.GetType().Name);
                 object animator = Reflect.Get(controller, "animator");
                 if (!Reflect.IsNull(animator))
                     text.Append(' ').Append(Diagnostics.DescribeAnimator(animator));
