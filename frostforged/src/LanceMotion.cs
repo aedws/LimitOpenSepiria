@@ -22,7 +22,7 @@ namespace FrostforgedCrescent
         private struct Point { public int Hash; public float Time; }
 
         private const int LoopFrom = 2;      // 0부터 세어 세 번째 타
-        private const int MaxComboId = 14;   // 그보다 큰 번호는 특수 동작
+        private const int MaxComboId = 9;    // 그보다 큰 번호는 특수 동작
         private const string FileName = "lance_motion.txt";
 
         private static readonly SortedDictionary<int, Point> Points = new SortedDictionary<int, Point>();
@@ -43,6 +43,22 @@ namespace FrostforgedCrescent
                 return;
             }
             harmony.Patch(begin, prefix: new HarmonyMethod(typeof(LanceMotion), nameof(BeginPrefix)));
+
+            // 대시 공격 금지: 공격 입력에서 '대시 공격' 표시를 지웁니다(무기 종류마다 입력 처리 함수가 따로 있습니다).
+            foreach (string name in new[] { "WeaponSimple_QuartterStaff", "WeaponSimple_SwordAndShield", "WeaponSimple_Staff", "WeaponSimple_GreatSword" })
+            {
+                Type weapon = Reflect.GameType(name);
+                MethodInfo attack = weapon == null ? null : AccessTools.GetDeclaredMethods(weapon).FirstOrDefault(m =>
+                    m.Name == "AttackButtonDown" && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(int) && m.GetParameters()[0].Name == "dashAttack");
+                if (attack != null)
+                    harmony.Patch(attack, prefix: new HarmonyMethod(typeof(LanceMotion), nameof(AttackPrefix)));
+            }
+        }
+
+        private static void AttackPrefix(Component __instance, ref int dashAttack)
+        {
+            if (dashAttack > 0 && !Reflect.IsNull(__instance) && !Reflect.IsNull(__instance.GetComponent(typeof(LanceAddon))))
+                dashAttack = 0;
         }
 
         private static string FilePath

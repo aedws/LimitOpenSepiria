@@ -41,18 +41,45 @@ namespace FrostforgedCrescent
             harmony.Patch(spawn, postfix: new HarmonyMethod(typeof(WeakSpear), nameof(SpawnPostfix)));
             harmony.Patch(despawn, postfix: new HarmonyMethod(typeof(WeakSpear), nameof(DespawnPostfix)));
             ready = true;
+
+            // 무녀의 예언과 같은 자리: 볼루스파가 주인의 적중을 받는 곳. 블루비틀을 들고 있으면 적중마다 약화 발동합니다.
+            MethodInfo onAttack = AccessTools.GetDeclaredMethods(spear).FirstOrDefault(m => m.Name == "OnAttackUnit" && m.GetParameters().Length == 2);
+            noCount = Reflect.GameType("ChargingCharm") == null ? null
+                : Reflect.GameType("ChargingCharm").GetMethods(Reflect.Any).FirstOrDefault(m => m.Name == "ActivateChargingCharmNoCount" && m.GetParameters().Length == 3);
+            if (onAttack == null || noCount == null)
+                Log.Warn("볼루스파의 적중 지점을 찾지 못해 블루비틀의 볼루스파 발동이 동작하지 않습니다.");
+            else
+                harmony.Patch(onAttack, postfix: new HarmonyMethod(typeof(WeakSpear), nameof(AttackPostfix)));
         }
 
-        /// <summary>서버에서, avatar 가 보유한 볼루스파를 약화된 형태로 발동합니다.</summary>
-        public static void Fire(object avatar)
+        private static MethodInfo noCount;
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, Stamp> LastFired
+            = new System.Runtime.CompilerServices.ConditionalWeakTable<object, Stamp>();
+        private sealed class Stamp { public long Ticks; }
+        private const long MinIntervalTicks = 1000000; // 0.1초: 한 번 찌를 때 여러 적이 맞아도 한 번만
+
+        // Charm_IceSpear.OnAttackUnit(맞은 대상, 피해). 서버에서 불립니다.
+        private static void AttackPostfix(object __instance, object instance)
         {
             try
             {
-                int fired = CharmLink.FireSpears(avatar, DamageMultiplier);
-                if (fired > 0 && !logged)
+                if (instance == null || Convert.ToString(Reflect.Get(instance, "fromType")) != "DirectAttack")
+                    return;
+                if (!LanceAddon.IsWielding(Reflect.Get(__instance, "NetworkAvatar")))
+                    return;
+                Stamp last = LastFired.GetOrCreateValue(__instance);
+                long now = DateTime.UtcNow.Ticks;
+                if (now - last.Ticks < MinIntervalTicks)
+                    return;
+                last.Ticks = now;
+                object charging = Reflect.Get(__instance, "chargingCharm");
+                if (Reflect.IsNull(charging))
+                    return;
+                noCount.Invoke(charging, new object[] { DamageMultiplier, true, "WEAPON" });
+                if (!logged)
                 {
                     logged = true;
-                    Log.Info("약화된 볼루스파 발동 확인: " + fired + "개" + (ready ? "" : " (크기 축소는 적용되지 않음)"));
+                    Log.Info("약화된 볼루스파 발동 확인" + (ready ? "" : " (크기 축소는 적용되지 않음)"));
                 }
             }
             catch (Exception e)

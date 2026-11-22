@@ -74,10 +74,37 @@ namespace FrostforgedCrescent
             });
         }
 
-        private static bool HasRapier(object weapon)
+        private static readonly string[] SpearNames = { "창격", "Thrust", "Spear" };
+
+        private static string EffectText(object addon)
         {
-            Component simple = Simple(weapon);
-            return !Reflect.IsNull(simple) && Addons(simple).Any(a => a.GetType().Name == "WeaponAddon_Rapier");
+            try { return Convert.ToString(Reflect.Get(addon, "effectText")) ?? ""; }
+            catch (Exception) { return ""; }
+        }
+
+        private static int Count(object target, string field)
+        {
+            var list = Reflect.Get(target, field) as ICollection;
+            return list == null ? 0 : list.Count;
+        }
+
+        // 진단용: 무기 효과의 종류·설명·능력치·주요 설정
+        private static string DescribeAddon(object addon)
+        {
+            var text = new System.Text.StringBuilder(addon.GetType().Name);
+            string effect = EffectText(addon).Replace("\n", " ");
+            text.Append(" \"").Append(effect.Length > 60 ? effect.Substring(0, 60) + "…" : effect).Append('"');
+            var stats = Reflect.Get(addon, "status") as IEnumerable;
+            if (stats != null)
+                foreach (object stat in stats)
+                    text.Append(" ").Append(Reflect.Get(stat, "statId")).Append("=").Append(Reflect.Get(stat, "value"));
+            foreach (string field in new[] { "changeWeaponActionName", "newActionParameter", "animationIntParamName", "animationIntParamValue" })
+            {
+                object value = Reflect.Get(addon, field);
+                if (value != null && Convert.ToString(value) != "")
+                    text.Append(" ").Append(field).Append("=").Append(value);
+            }
+            return text.ToString();
         }
 
         // '무녀의 예언'을 이름으로 못 찾을 때: 무기 공격으로 볼루스파를 발동시키는 능력치가 붙은 무기
@@ -105,13 +132,13 @@ namespace FrostforgedCrescent
                 return;
             List<object> weapons = all.Cast<object>().Where(w => !Reflect.IsNull(Simple(w))).ToList();
 
+            // 몸체는 반드시 '돌격창 기오로이드'여야 합니다. 다른 무기로 대신하면 쥐는 방식과 공격이 달라집니다.
             object body = ByName(weapons, BodyNames);
-            if (body == null || !(Simple(body).GetType().Name == "WeaponSimple_SwordAndShield"))
-                body = weapons.FirstOrDefault(HasRapier);
             if (body == null)
             {
                 failed = true;
-                Log.Error("'돌격창 기오로이드'(창격을 쓰는 무기)를 찾지 못해 블루비틀을 등록하지 못했습니다.");
+                Log.Error("'돌격창 기오로이드'를 이름으로 찾지 못해 블루비틀을 등록하지 못했습니다. 무기 이름 목록: "
+                          + string.Join(" / ", weapons.Select(w => "#" + Reflect.Get(w, "id") + " " + DisplayName(w)).ToArray()));
                 return;
             }
             object look = ByName(weapons, LookNames) ?? weapons.FirstOrDefault(HasSpearStat);
@@ -137,23 +164,17 @@ namespace FrostforgedCrescent
             prefab.name = "Weapon-FFC-BlueBeetle";
             Component simple = prefab.GetComponent(typeof(WeaponSimple));
 
-            // 무기 효과: 기오로이드의 것 중 창격만 남기고, 블루비틀의 효과를 붙입니다.
+            // 무기 효과: 기오로이드의 것 중 설명에 '창격'이 들어간 것만 남기고(못 가리면 전부), 블루비틀의 효과를 붙입니다.
             List<object> inherited = Addons(simple);
-            List<object> kept = inherited.Where(a => a.GetType().Name == "WeaponAddon_Rapier").ToList();
-            Log.Info("블루비틀 무기 효과: 기오로이드의 [" + string.Join(", ", inherited.Select(a => a.GetType().Name).ToArray()) + "] 중 창격 " + kept.Count + "개 계승");
+            List<object> kept = inherited.Where(a => SpearNames.Any(n => EffectText(a).IndexOf(n, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
             if (kept.Count == 0)
-            {
-                Type rapier = Reflect.GameType("WeaponAddon_Rapier");
-                if (rapier != null)
-                {
-                    Component added = prefab.AddComponent(rapier);
-                    Reflect.Set(added, "parent", simple);
-                    object source = weapons.Where(HasRapier).Select(w => Addons(Simple(w)).First(a => a.GetType().Name == "WeaponAddon_Rapier")).FirstOrDefault();
-                    if (source != null)
-                        Reflect.Set(added, "effectText", Reflect.Get(source, "effectText"));
-                    kept.Add(added);
-                }
-            }
+                kept = inherited;
+            Log.Info("블루비틀 몸체: " + simple.GetType().Name + ", 기본 공격 " + Count(simple, "basicComboAttacks") + "타, 무기 효과 " + inherited.Count + "개 중 " + kept.Count + "개 계승");
+            foreach (object a in inherited)
+                Log.Info("  " + (kept.Contains(a) ? "[계승] " : "[제외] ") + DescribeAddon(a));
+            if (look != null)
+                foreach (object a in Addons(Simple(look)))
+                    Log.Info("  [무녀의 예언] " + DescribeAddon(a));
             var addon = (LanceAddon)prefab.AddComponent(typeof(LanceAddon));
             addon.parent = (WeaponSimple)simple;
             addon.enabled = true;
@@ -237,7 +258,9 @@ namespace FrostforgedCrescent
             Rect lanceRect = lance.rect;
             Vector2 lancePivot = lance.pivot;
             Vector2? pivot = new Vector2(lancePivot.x / lanceRect.width, lancePivot.y / lanceRect.height);
-            if (Option(options, "pivot", "lance") == "source")
+            // 무녀의 예언이 기오로이드와 같은 종류의 무기면 쥐는 위치도 무녀의 예언의 것이 맞습니다.
+            bool sameKind = !Reflect.IsNull(lookSimple) && lookSimple.GetType() == simple.GetType();
+            if (Option(options, "pivot", sameKind ? "source" : "lance") == "source")
                 pivot = null;
             float x, y, scale = 1f;
             if (TryNumber(options, "pivotx", out x) && TryNumber(options, "pivoty", out y))

@@ -151,6 +151,9 @@ namespace FrostforgedCrescent
                 if (Convert.ToInt32(damageResult.GetValue(damage)) <= 0)
                     return;
 
+                if (fromType != null && Convert.ToInt32(fromType.GetValue(damage)) == 1) // DirectAttack
+                    LanceAddon.OnWeaponHit(attacker, __instance, damage);
+
                 int heal = Stat(attacker, ItemContent.HealOnHit);
                 int extra = Stat(attacker, ItemContent.MaxHpDamage);
                 if (heal <= 0 && extra <= 0)
