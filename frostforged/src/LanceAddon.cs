@@ -55,6 +55,7 @@ namespace FrostforgedCrescent
             {
                 Wielders.Remove(avatar);
                 Addons.Remove(this);
+                LanceParry.Clear(avatar);
                 if (statApplied)
                     AddAttackSpeed(-AttackSpeedBonus);
                 statApplied = false;

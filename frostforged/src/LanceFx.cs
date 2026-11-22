@@ -66,6 +66,12 @@ namespace FrostforgedCrescent
                 harmony.Patch(spawn, prefix: new HarmonyMethod(self, nameof(MeleePrefix)), postfix: new HarmonyMethod(self, nameof(Paint)));
         }
 
+        /// <summary>이 공격 데이터로 만들어지는 이펙트도 얼음 궤적으로 그립니다.</summary>
+        public static void Claim(UnityEngine.Object fireData)
+        {
+            FireData.Add(fireData);
+        }
+
         /// <summary>무기 프리팹의 공격 데이터를 이 무기 전용으로 복제해 둡니다(내용은 그대로).</summary>
         public static void Claim(Component weapon)
         {
