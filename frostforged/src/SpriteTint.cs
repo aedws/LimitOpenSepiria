@@ -15,6 +15,17 @@ namespace FrostforgedCrescent
         /// <summary>source 를 푸르게 칠한 그림. pivot 은 0~1 로 정규화한 기준점이고, null 이면 원본 것을 씁니다.</summary>
         public static Sprite Bluer(Sprite source, Vector2? pivot, float scale)
         {
+            return Remap(source, pivot, scale, "_FFCBlue", (pixels, width, height) =>
+            {
+                for (int i = 0; i < pixels.Length; i++)
+                    pixels[i] = Shift(pixels[i]);
+                return pixels;
+            });
+        }
+
+        /// <summary>source 의 픽셀을 process 로 바꾼 새 그림. 크기는 같고, pivot 이 null 이면 기준점도 같습니다.</summary>
+        public static Sprite Remap(Sprite source, Vector2? pivot, float scale, string suffix, Func<Color32[], int, int, Color32[]> process)
+        {
             if (Reflect.IsNull(source))
                 return null;
             try
@@ -31,7 +42,8 @@ namespace FrostforgedCrescent
                 var pixels = new Color32[width * height];
                 for (int row = 0; row < height; row++)
                     for (int column = 0; column < width; column++)
-                        pixels[row * width + column] = Shift(all[(y + row) * textureWidth + x + column]);
+                        pixels[row * width + column] = all[(y + row) * textureWidth + x + column];
+                pixels = process(pixels, width, height);
 
                 var created = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 created.filterMode = FilterMode.Point;
@@ -44,7 +56,7 @@ namespace FrostforgedCrescent
                 Vector2 own = source.pivot;
                 Vector2 normalized = pivot ?? new Vector2(own.x / sourceRect.width, own.y / sourceRect.height);
                 Sprite sprite = Sprite.Create(created, new Rect(0f, 0f, width, height), normalized, source.pixelsPerUnit / (scale > 0f ? scale : 1f));
-                sprite.name = source.name + "_FFCBlue";
+                sprite.name = source.name + suffix;
                 Reflect.Set(sprite, "hideFlags", 61);
                 return sprite;
             }
