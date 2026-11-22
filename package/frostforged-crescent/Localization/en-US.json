@@ -19,5 +19,7 @@
   "ItemCategory_FFC_Vitality": "Vitality",
   "ItemCategory_FFC_Vitality_Fruit": "Fruit of Vitality",
   "ComboEffect_FFC_Vitality": "Vitality becomes power.",
-  "ComboEffect_FFC_DarkCloudEmpty": "Lightning still strikes for 50% damage while the dark cloud is empty"
+  "ComboEffect_FFC_DarkCloudEmpty": "Lightning still strikes for 50% damage while the dark cloud is empty",
+  "Weapon_FFC_BlueBeetle_Name": "Frost Rider : Lance Blue Beetle",
+  "WeaponAddon_FFC_BlueBeetle_Effect": "Attack speed +20%. Weapon attacks have a 20% chance to inflict Frostbite.\nBasic Attack: Thrust repeats only its 3rd, 4th and 5th hits.\nOn hit, your Völuspá fires toward the aim at half size and half damage. It ignores Völuspá's charge time, and extra activations of ice armaments apply."
 }

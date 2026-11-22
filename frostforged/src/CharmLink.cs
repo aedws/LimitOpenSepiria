@@ -109,6 +109,23 @@ namespace FrostforgedCrescent
             }
         }
 
+        /// <summary>서버에서, 보유한 볼루스파를 충전과 관계없이 조준 방향으로 발동합니다. 발동한 개수를 돌려줍니다.</summary>
+        public static int FireSpears(object avatar, float damageMultiplier)
+        {
+            if (activateNoCount == null || Reflect.IsNull(avatar))
+                return 0;
+            int spears = 0;
+            foreach (object spear in Owned(Spears, avatar))
+            {
+                object charging = Reflect.Get(spear, "chargingCharm");
+                if (Reflect.IsNull(charging))
+                    continue;
+                activateNoCount.Invoke(charging, new object[] { damageMultiplier, true, "WEAPON" });
+                spears++;
+            }
+            return spears;
+        }
+
         private static List<object> Owned(List<object> charms, object avatar)
         {
             charms.RemoveAll(Reflect.IsNull);

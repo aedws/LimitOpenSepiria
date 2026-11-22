@@ -47,7 +47,17 @@ namespace FrostforgedCrescent
             public string Id;
             public int[] Values;
             public bool HideZero;
-            public Stat(string id, bool hideZero, params int[] values) { Id = id; Values = values; HideZero = hideZero; }
+            // values 는 1레벨부터의 값입니다. 0레벨 값은 1레벨의 절반(반올림, 0 은 0)을 앞에 붙입니다.
+            // keepAtZero 가 true 면(불이익·켜짐/꺼짐 효과) 0레벨도 1레벨과 같은 값을 씁니다.
+            public Stat(string id, bool hideZero, params int[] values) : this(id, hideZero, false, values) { }
+            public Stat(string id, bool hideZero, bool keepAtZero, params int[] values)
+            {
+                Id = id;
+                HideZero = hideZero;
+                Values = new int[values.Length + 1];
+                Values[0] = keepAtZero ? values[0] : (values[0] + 1) / 2;
+                Array.Copy(values, 0, Values, 1, values.Length);
+            }
         }
 
         private sealed class Item
@@ -70,7 +80,7 @@ namespace FrostforgedCrescent
                 {
                     new Stat("FFC_ICE_CRIT", false, 10, 20, 30, 40, 50),
                     new Stat("CHARGING_CHARM_AMPLIFY", true, 0, 0, 1, 1, 2),
-                    new Stat("FFC_WEAPON_TO_ICE", false, 90, 80, 70, 60, 50),
+                    new Stat("FFC_WEAPON_TO_ICE", false, true, 90, 80, 70, 60, 50),
                 }
             },
             new Item
@@ -107,7 +117,7 @@ namespace FrostforgedCrescent
                 Stats = new[]
                 {
                     new Stat("HP_STEAL", false, 10, 25, 50),
-                    new Stat("FFC_LAST_STAND", false, 1, 1, 1),
+                    new Stat("FFC_LAST_STAND", false, true, 1, 1, 1),
                 }
             },
         };
@@ -251,7 +261,7 @@ namespace FrostforgedCrescent
             }
             Reflect.Set(charm, "stats", groups);
             Reflect.Set(charm, "showStatsEffectStringFirst", true);
-            Reflect.Set(charm, "maxLevel", item.Stats[0].Values.Length); // 값이 N 개면 최대 레벨 N (마지막 값은 최대 레벨까지 유지)
+            Reflect.Set(charm, "maxLevel", item.Stats[0].Values.Length - 1); // 값은 0레벨~최대 레벨까지 하나씩
             Reflect.Set(charm, "effectsString", Array.CreateInstance(Reflect.GameType("LocalizedString"), 0));
             Reflect.Set(charm, "isUniqueEffect", true); // [고유]
             if (!HorayModAPI.RegisterNetworkPrefab(prefab, Entry.ModId + ":item-" + item.Name.ToLowerInvariant()))

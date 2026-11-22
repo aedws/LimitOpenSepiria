@@ -30,6 +30,8 @@ namespace FrostforgedCrescent
                     FinalCombo.Apply(harmony);
                     ItemEffects.Apply(harmony);
                     DarkCloudBoost.Apply(harmony);
+                    LanceMotion.Apply(harmony);
+                    WeakSpear.Apply(harmony);
                 }
                 catch (Exception e)
                 {
@@ -60,6 +62,7 @@ namespace FrostforgedCrescent
         private static void RegisterWeapon()
         {
             WeaponFactory.Register(packageRoot ?? "");
+            LanceFactory.Register(packageRoot ?? "");
         }
     }
 }

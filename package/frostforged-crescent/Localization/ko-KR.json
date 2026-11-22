@@ -19,5 +19,7 @@
   "ItemCategory_FFC_Vitality": "생명",
   "ItemCategory_FFC_Vitality_Fruit": "생명의 열매",
   "ComboEffect_FFC_Vitality": "생명력이 힘이 됩니다.",
-  "ComboEffect_FFC_DarkCloudEmpty": "먹구름이 비어 있어도 번개가 50%의 피해로 발동"
+  "ComboEffect_FFC_DarkCloudEmpty": "먹구름이 비어 있어도 번개가 50%의 피해로 발동",
+  "Weapon_FFC_BlueBeetle_Name": "서리기수 : 돌격창 블루비틀",
+  "WeaponAddon_FFC_BlueBeetle_Effect": "공격 속도가 20% 증가합니다. 무기 공격 시 20% 확률로 동상을 부여합니다.\n일반공격: 창격의 3·4·5타만 반복합니다.\n공격 적중 시 보유한 볼루스파가 절반 크기, 절반 피해로 조준 방향에 발동합니다. 볼루스파의 충전 시간과 관계없이 발동하며, 얼음 무구의 추가 발동 효과가 적용됩니다."
 }
