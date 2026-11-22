@@ -113,7 +113,7 @@ namespace FrostforgedCrescent
                 addons.SetValue(existing[i], i + 1);
             Reflect.Set(simple, "addons", addons);
 
-            ApplyWeaponSprite(simple, packageRoot);
+            ApplyWeaponTint(simple);
 
             if (!HorayModAPI.RegisterNetworkPrefab(prefab, NetworkKey))
                 Log.Warn("네트워크 프리팹 등록에 실패했습니다. 멀티플레이에서 무기가 보이지 않을 수 있습니다.");
@@ -130,7 +130,7 @@ namespace FrostforgedCrescent
             object templateIcon = Reflect.Get(template, "icon");
             object templateBigIcon = Reflect.Get(template, "bigIcon");
             Reflect.Set(created, "icon", SpriteLoader.Load(System.IO.Path.Combine(packageRoot, "Sprites", "icon.png"), templateIcon, "아이콘") ?? templateIcon);
-            Reflect.Set(created, "bigIcon", SpriteLoader.Load(System.IO.Path.Combine(packageRoot, "Sprites", "icon_big.png"), templateBigIcon, "큰 아이콘") ?? templateBigIcon);
+            Reflect.Set(created, "bigIcon", templateBigIcon); // 기본 카타나와 같이 둡니다(없으면 아이콘이 대신 쓰입니다)
             Reflect.Set(created, "mainWeaponPrefab", prefab);
             Reflect.Set(created, "subWeaponPrefab", Reflect.Get(template, "subWeaponPrefab"));
             Reflect.Set(created, "standardEnhancements", Activator.CreateInstance(typeof(List<>).MakeGenericType(Reflect.GameType("EnhancementMetadata"))));
@@ -141,40 +141,19 @@ namespace FrostforgedCrescent
             Log.Info("무기 #" + WeaponId + " 준비됨 (템플릿 #" + templateId + " 의 강화 무기)");
         }
 
-        // 손에 든 칼 그림. 본체와, 가려질 때 쓰는 윤곽(스텐실) 렌더러에 같은 그림을 넣습니다.
-        private static void ApplyWeaponSprite(Component simple, string packageRoot)
+        // 손에 든 칼. 카타나의 모습은 여러 장의 애니메이션 그림으로 이루어져 있어 한 장으로 바꿀 수 없습니다.
+        // 대신 본체 그림에 서리빛 색조를 입힙니다.
+        private static void ApplyWeaponTint(Component simple)
         {
             object body = Reflect.Get(simple, "mainWeaponBody");
             object renderer = Reflect.Get(body, "weaponSpriteRenderer");
             if (Reflect.IsNull(renderer))
             {
-                Log.Info("무기 그림: 이 무기에는 본체 그림 칸이 없습니다.");
+                Log.Info("무기 색조: 이 무기에는 본체 그림 칸이 없습니다.");
                 return;
             }
-
-            object original = Reflect.Get(renderer, "sprite");
-            // weapon.png 가 있으면 그것을 그대로 씁니다. 없으면 원본이 향하는 방향에 맞는 그림을 고릅니다.
-            string path = System.IO.Path.Combine(packageRoot, "Sprites", "weapon.png");
-            if (!System.IO.File.Exists(path))
-            {
-                string direction = SpriteLoader.GuessDirection(original);
-                if (direction == null)
-                {
-                    Log.Info("무기 그림: 원본의 방향을 판단하지 못해 원본을 씁니다. 원본 " + SpriteLoader.Describe(original));
-                    return;
-                }
-                path = System.IO.Path.Combine(packageRoot, "Sprites", "weapon_" + direction + ".png");
-                Log.Info("무기 그림: 원본 방향 '" + direction + "' 로 판단");
-            }
-
-            object sprite = SpriteLoader.Load(path, original, "무기 그림");
-            if (sprite == null)
-                return;
-
-            Reflect.Set(renderer, "sprite", sprite);
-            object stencil = Reflect.Get(body, "weaponStencilRenderer");
-            if (!Reflect.IsNull(stencil))
-                Reflect.Set(stencil, "sprite", sprite);
+            Reflect.Set(renderer, "color", new Color(0.62f, 0.88f, 1f, 1f));
+            Log.Info("무기 색조 적용");
         }
 
         private static object NewLocalizedString(string key)

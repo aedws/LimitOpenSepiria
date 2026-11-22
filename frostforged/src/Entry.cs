@@ -24,6 +24,7 @@ namespace FrostforgedCrescent
                 try
                 {
                     ScabbardPatch.Apply(harmony);
+                    MotionLock.Apply(harmony);
                 }
                 catch (Exception e)
                 {
