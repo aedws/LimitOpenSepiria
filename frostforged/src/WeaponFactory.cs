@@ -153,7 +153,21 @@ namespace FrostforgedCrescent
             }
 
             object original = Reflect.Get(renderer, "sprite");
-            object sprite = SpriteLoader.Load(System.IO.Path.Combine(packageRoot, "Sprites", "weapon.png"), original, "무기 그림");
+            // weapon.png 가 있으면 그것을 그대로 씁니다. 없으면 원본이 향하는 방향에 맞는 그림을 고릅니다.
+            string path = System.IO.Path.Combine(packageRoot, "Sprites", "weapon.png");
+            if (!System.IO.File.Exists(path))
+            {
+                string direction = SpriteLoader.GuessDirection(original);
+                if (direction == null)
+                {
+                    Log.Info("무기 그림: 원본의 방향을 판단하지 못해 원본을 씁니다. 원본 " + SpriteLoader.Describe(original));
+                    return;
+                }
+                path = System.IO.Path.Combine(packageRoot, "Sprites", "weapon_" + direction + ".png");
+                Log.Info("무기 그림: 원본 방향 '" + direction + "' 로 판단");
+            }
+
+            object sprite = SpriteLoader.Load(path, original, "무기 그림");
             if (sprite == null)
                 return;
 
