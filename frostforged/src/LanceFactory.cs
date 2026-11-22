@@ -11,7 +11,8 @@ namespace FrostforgedCrescent
     /// <summary>
     /// '서리기수 : 돌격창 블루비틀' 무기를 만들어 등록합니다.
     ///  - 몸체: '돌격창 기오로이드'의 무기 프리팹을 복제합니다(일반공격: 창격, 대시 공격 불가를 그대로 씁니다).
-    ///  - 그림: '무녀의 예언'의 무기 그림을 실행 중에 읽어 푸르게 다시 칠합니다(게임 그림은 모드에 담지 않습니다).
+    ///  - 그림: 전용 그림 Sprites/lance.png. 없으면 '무녀의 예언'의 무기 그림을 실행 중에 읽어 푸르게 칠합니다.
+    ///    쥐는 위치와 픽셀 크기는 '무녀의 예언'의 그림에서 가져옵니다.
     ///  - 강화 경로: '백상의 봉'의 강화 무기로 등록합니다.
     /// 세 무기는 ID 가 코드에 없어 이름으로 찾고, 못 찾으면 구성으로 찾습니다.
     /// </summary>
@@ -208,8 +209,9 @@ namespace FrostforgedCrescent
             Reflect.Set(created, "enabled", true);
             Reflect.Set(created, "activeState", Reflect.Get(body, "activeState"));
             Reflect.Set(created, "aName", NewLocalizedString(NameKey));
-            Reflect.Set(created, "icon", SpriteTint.Bluer(icon, null, 1f) ?? icon);
-            Reflect.Set(created, "bigIcon", Reflect.IsNull(bigIcon) ? null : (SpriteTint.Bluer(bigIcon, null, 1f) ?? bigIcon));
+            object customIcon = SpriteLoader.Load(Path.Combine(packageRoot, "Sprites", "lance_icon.png"), icon, "블루비틀 아이콘");
+            Reflect.Set(created, "icon", customIcon ?? SpriteTint.Bluer(icon, null, 1f) ?? icon);
+            Reflect.Set(created, "bigIcon", customIcon != null || Reflect.IsNull(bigIcon) ? null : (SpriteTint.Bluer(bigIcon, null, 1f) ?? bigIcon));
             Reflect.Set(created, "mainWeaponPrefab", prefab);
             Reflect.Set(created, "subWeaponPrefab", Reflect.Get(body, "subWeaponPrefab"));
             Reflect.Set(created, "standardEnhancements", Activator.CreateInstance(typeof(List<>).MakeGenericType(Reflect.GameType("EnhancementMetadata"))));
@@ -267,7 +269,15 @@ namespace FrostforgedCrescent
                 pivot = new Vector2(x, y);
             TryNumber(options, "scale", out scale);
 
-            Sprite tinted = SpriteTint.Bluer(source, pivot, scale <= 0f ? 1f : scale);
+            // 전용 그림(Sprites/lance.png)이 있으면 그것을, 없으면 무녀의 예언의 그림을 푸르게 칠해 씁니다.
+            // 전용 그림의 픽셀 크기는 원본과 같게 두고, 쥐는 위치는 위에서 정한 비율을 따릅니다.
+            if (scale <= 0f)
+                scale = 1f;
+            Rect sourceRect = source.rect;
+            Vector2 sourcePivot = source.pivot;
+            Vector2 grip = pivot ?? new Vector2(sourcePivot.x / sourceRect.width, sourcePivot.y / sourceRect.height);
+            Sprite tinted = SpriteLoader.Load(Path.Combine(packageRoot, "Sprites", "lance.png"), source, "블루비틀 창 그림", grip, source.pixelsPerUnit / scale) as Sprite
+                            ?? SpriteTint.Bluer(source, pivot, scale);
             if (tinted == null)
                 return;
             Reflect.Set(renderer, "sprite", tinted);

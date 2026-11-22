@@ -16,6 +16,12 @@ namespace FrostforgedCrescent
     {
         public static object Load(string path, object original, string label)
         {
+            return Load(path, original, label, null, 0f);
+        }
+
+        /// <summary>pivotOverride(0~1)와 pixelsPerUnitOverride(0 보다 크면)를 주면 원본에서 가져온 값 대신 씁니다.</summary>
+        public static object Load(string path, object original, string label, Vector2? pivotOverride, float pixelsPerUnitOverride)
+        {
             if (!File.Exists(path))
             {
                 Log.Info(label + ": 그림 파일이 없어 원본을 씁니다 (" + Path.GetFileName(path) + "). 원본 " + Describe(original));
@@ -66,6 +72,11 @@ namespace FrostforgedCrescent
                     if (originalWidth > 0f && originalHeight > 0f)
                         pixelsPerUnit *= Math.Max(width / originalWidth, height / originalHeight);
                 }
+
+                if (pivotOverride.HasValue)
+                    pivot = pivotOverride.Value;
+                if (pixelsPerUnitOverride > 0f)
+                    pixelsPerUnit = pixelsPerUnitOverride;
 
                 object area = Activator.CreateInstance(rectType, 0f, 0f, (float)width, (float)height);
                 MethodInfo create = spriteType.GetMethods(BindingFlags.Public | BindingFlags.Static).First(m =>
