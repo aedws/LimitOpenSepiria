@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using UnityEngine;
 
 namespace FrostforgedCrescent
 {
@@ -14,6 +15,7 @@ namespace FrostforgedCrescent
         public const float SheathMoveSpeedBonus = 0.6f;
 
         private Action<int> specialHandler;
+        private GameObject hip;
         private object avatar;
         private bool speedApplied;
         private bool loggedSpeed;
@@ -33,6 +35,7 @@ namespace FrostforgedCrescent
                 if (Reflect.IsNull(controller))
                     return;
                 avatar = Reflect.Get(controller, "unitAvatar");
+                hip = HipScabbard.Create(controller as Component, parent as Component);
                 Reflect.Set(parent, "sheathActionType", 0); // 특수 공격을 납도로
                 specialHandler = OnSpecialSwing;
                 var special = Reflect.Get(controller, "OnSpecialAttackSwing") as Action<int>;
@@ -53,6 +56,8 @@ namespace FrostforgedCrescent
             try
             {
                 SetSpeedBonus(false);
+                HipScabbard.Destroy(hip);
+                hip = null;
                 if (specialHandler != null && !Reflect.IsNull(controller))
                 {
                     var special = Reflect.Get(controller, "OnSpecialAttackSwing") as Action<int>;
@@ -90,6 +95,13 @@ namespace FrostforgedCrescent
                 // 계승한 무기 효과가 특수 공격을 튕겨내기로 바꾸므로, 납도로 유지합니다.
                 if (Convert.ToInt32(Reflect.Get(parent, "sheathActionType")) != 0)
                     Reflect.Set(parent, "sheathActionType", 0);
+                // 허리의 칼집은 칼을 뽑아 든 동안만 보입니다(납도하면 칼 그림이 칼집째로 바뀝니다).
+                if (!Reflect.IsNull(hip))
+                {
+                    bool show = !Equals(Reflect.Get(parent, "isBladeSheathed"), true);
+                    if (hip.activeSelf != show)
+                        hip.SetActive(show);
+                }
                 if (IsServer)
                     SetSpeedBonus(IsSheathed);
             }

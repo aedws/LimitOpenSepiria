@@ -156,6 +156,6 @@ dotnet build frostforged/src/FrostforgedCrescent.csproj -c Release
 
 - 기본 카타나의 무기 프리팹을 복제해 강화 무기로 등록하고, 무기 효과 컴포넌트(`CrescentAddon`)를 붙입니다.
 - 이 무기를 들고 있으면 축사의 검집(`Charm_AirSlash`)이 충전 여부와 관계없이 기본 공격마다 발동합니다.
-- `package/frostforged-crescent/Sprites/`: `icon.png`(9x27)은 무기 아이콘, `katana.png`·`katana_sheathed.png`(10x29)는 손에 든 칼과 납도 상태의 칼입니다.
+- `package/frostforged-crescent/Sprites/`: `icon.png`은 무기 아이콘, `katana.png`·`katana_sheathed.png`(10x29)는 손에 든 칼과 납도 상태의 칼, `scabbard.png`는 허리 칼집(위치는 `scabbard.txt`)입니다.
 - 특수 공격은 납도이며, 납도 상태에서는 이동 속도가 60% 증가하고 납도 공격이 축사의 검집과 볼루스파(조준 방향)를 발동시킵니다.
 - 공격 모션을 첫 번째 베기로 고정하는 기능은 아직 없습니다. 0.1.0은 그 구현에 필요한 애니메이션 정보를 로그(`[FrostforgedCrescent]`)로 남깁니다.

@@ -107,6 +107,9 @@ namespace UnityEngine
     public class Transform : Component
     {
         public Transform parent { get { return null; } set { } }
+        public Vector3 localPosition { get { return default; } set { } }
+        public Vector3 localEulerAngles { get { return default; } set { } }
+        public Vector3 localScale { get { return default; } set { } }
         public int GetSiblingIndex() { return 0; }
         public void SetSiblingIndex(int index) { }
         public bool IsChildOf(Transform parent) { return false; }

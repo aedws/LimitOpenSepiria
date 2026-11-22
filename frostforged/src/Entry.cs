@@ -9,7 +9,7 @@ namespace FrostforgedCrescent
         public const string ModId = "aedws.frostforged-crescent";
 
         private static Harmony harmony;
-        private static string packageRoot;
+        internal static string packageRoot;
 
         protected override void OnModLoaded()
         {
