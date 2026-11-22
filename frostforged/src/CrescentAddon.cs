@@ -47,6 +47,7 @@ namespace FrostforgedCrescent
                     sheathSpeedApplied = true;
                 }
                 Reflect.Set(parent, "sheathActionType", 0); // 특수 공격을 납도로
+                Reflect.Set(parent, "finalComboIdx", 0);    // 모든 기본 공격이 마지막 공격
                 specialHandler = OnSpecialSwing;
                 var special = Reflect.Get(controller, "OnSpecialAttackSwing") as Action<int>;
                 Reflect.Set(controller, "OnSpecialAttackSwing", (Action<int>)Delegate.Combine(special, specialHandler));
@@ -112,6 +113,9 @@ namespace FrostforgedCrescent
                 // 계승한 무기 효과가 특수 공격을 튕겨내기로 바꾸므로, 납도로 유지합니다.
                 if (Convert.ToInt32(Reflect.Get(parent, "sheathActionType")) != 0)
                     Reflect.Set(parent, "sheathActionType", 0);
+                // 기본 공격은 0번(첫 번째 베기)만 나가므로, 그것을 마지막 공격으로 둡니다.
+                if (Convert.ToInt32(Reflect.Get(parent, "finalComboIdx")) != 0)
+                    Reflect.Set(parent, "finalComboIdx", 0);
                 if (IsServer)
                     SetSpeedBonus(IsSheathed);
             }

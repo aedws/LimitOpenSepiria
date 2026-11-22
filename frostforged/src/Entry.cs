@@ -26,6 +26,7 @@ namespace FrostforgedCrescent
                     ScabbardPatch.Apply(harmony);
                     MotionLock.Apply(harmony);
                     CharmLink.Apply(harmony);
+                    FinalCombo.Apply(harmony);
                     SoundProbe.Apply(harmony);
                 }
                 catch (Exception e)
