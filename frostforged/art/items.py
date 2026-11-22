@@ -13,7 +13,9 @@ PAL={'W':(255,255,255,255),
      # 핏빛
      'p':(230,172,168,255),'r':(206,89,81,255),'R':(183,50,39,255),'d':(134,44,43,255),'D':(98,36,40,255),
      # 양피지
-     'e':(244,232,196,255),'E':(214,190,140,255)}
+     'e':(244,232,196,255),'E':(214,190,140,255),
+     # 악보의 먹색
+     't':(77,97,115,255),'T':(106,141,148,255)}
 ART={
 'FrostBlade':[
 "............Wc.",
@@ -54,19 +56,22 @@ ART={
 ".....c.....",
 ],
 'ScoreNorthWind':[
-".EeeeeeeeeE.",
-"EeeeeeeeeeeE",
-".eSSSSSKSSe.",
-".eeeeeeKKee.",
-".eSSSSSKSKe.",
-".eeeeeeKeee.",
-".eSSKKKKSSe.",
-".eeKKKKKeee.",
-".eSSKKKSSSe.",
-".eeeeeeeeee.",
-".eaaaeeeaae.",
-"EeeeeaaaeeeE",
-".EEEEEEEEEE.",
+"...........WWWW.",
+"........WWWWccW.",
+".....WWWWcccccc.",
+"..WWWWcttttcccc.",
+"WWWccttccttttcc.",
+".WccTTTcccncccc.",
+".WcccccttttnTcc.",
+"..ccttttccnnccc.",
+"..cccccTTnnnbbb.",
+"..cbbttttbnnbbb.",
+".a.bbbaabbbaabB.",
+"aWa.baabbaabbBB.",
+".a...aBBaaBBB...",
+"....a..BBBB.....",
+"...aWa..........",
+"....a...........",
 ],
 'BloodstonePendant':[
 ".....ggg.....",
