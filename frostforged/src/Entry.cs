@@ -29,7 +29,7 @@ namespace FrostforgedCrescent
                     CharmLink.Apply(harmony);
                     FinalCombo.Apply(harmony);
                     ItemEffects.Apply(harmony);
-                    SoundProbe.Apply(harmony);
+                    DarkCloudBoost.Apply(harmony);
                 }
                 catch (Exception e)
                 {

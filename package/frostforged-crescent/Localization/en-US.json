@@ -18,5 +18,6 @@
   "Keyword_FFC_MaxHpDamage": "Weapon hits deal extra damage equal to {VALUE} of max HP (highest elemental damage)",
   "ItemCategory_FFC_Vitality": "Vitality",
   "ItemCategory_FFC_Vitality_Fruit": "Fruit of Vitality",
-  "ComboEffect_FFC_Vitality": "Vitality becomes power."
+  "ComboEffect_FFC_Vitality": "Vitality becomes power.",
+  "ComboEffect_FFC_DarkCloudEmpty": "Lightning still strikes for 50% damage while the dark cloud is empty"
 }

@@ -95,6 +95,11 @@ namespace UnityEngine
         public bool enabled { get { return false; } set { } }
     }
 
+    public static class Time
+    {
+        public static float deltaTime { get { return 0f; } }
+    }
+
     public class MonoBehaviour : Behaviour
     {
     }

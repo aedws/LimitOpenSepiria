@@ -159,4 +159,5 @@ dotnet build frostforged/src/FrostforgedCrescent.csproj -c Release
 - `package/frostforged-crescent/Sprites/`: `icon.png`은 무기 아이콘, `katana.png`·`katana_sheathed.png`(10x29)는 손에 든 칼과 납도 상태의 칼, `scabbard.png`는 허리 칼집(위치는 `scabbard.txt`)입니다.
 - 특수 공격은 납도이며, 납도 상태에서는 이동 속도가 60% 증가하고 납도 공격이 축사의 검집과 볼루스파(조준 방향)를 발동시킵니다.
 - 아티팩트 5종(서리칼날, 서리한 : II형, 악보 : 북풍, 혈석 펜던트, 혈석 십자가)과 '생명' 콤보를 추가합니다. 등록은 `ItemContent.cs`, 효과 처리는 `ItemEffects.cs`, 아이콘은 `Sprites/Items/`(생성 스크립트 `frostforged/art/items.py`)입니다.
+- 먹구름 콤보 개선(`DarkCloudBoost.cs`): 먹구름이 0이어도 콤보(2)가 켜져 있으면 번개가 50% 피해로 발동하고, 이때 번개·소모 이펙트는 절반 크기로 나옵니다(이펙트 축소는 호스트 본인 화면만).
 - 공격 모션을 첫 번째 베기로 고정하는 기능은 아직 없습니다. 0.1.0은 그 구현에 필요한 애니메이션 정보를 로그(`[FrostforgedCrescent]`)로 남깁니다.

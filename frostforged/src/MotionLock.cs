@@ -55,7 +55,6 @@ namespace FrostforgedCrescent
                     return true;
                 int layer = (int)layerField.GetValue(__instance);
 
-                SoundProbe.MarkAttack(fireId);
                 State state = States.GetOrCreateValue(__instance);
                 if (fireId == 0)
                 {

@@ -18,5 +18,6 @@
   "Keyword_FFC_MaxHpDamage": "무기 공격 적중 시 최대 HP의 {VALUE}만큼 추가 피해 (가장 높은 속성 피해)",
   "ItemCategory_FFC_Vitality": "생명",
   "ItemCategory_FFC_Vitality_Fruit": "생명의 열매",
-  "ComboEffect_FFC_Vitality": "생명력이 힘이 됩니다."
+  "ComboEffect_FFC_Vitality": "생명력이 힘이 됩니다.",
+  "ComboEffect_FFC_DarkCloudEmpty": "먹구름이 비어 있어도 번개가 50%의 피해로 발동"
 }
