@@ -19,17 +19,32 @@ namespace FrostforgedCrescent
     /// </summary>
     internal static class LanceFx
     {
-        private static readonly Color32 Pale = new Color32(208, 232, 248, 255);   // 넓은 얼음빛 면
-        private static readonly Color32 Accent = new Color32(152, 200, 248, 255); // 가는 줄기의 진한 하늘색
+        // 기수별 궤적 색: [넓은 면, 가는 줄기]. 순서는 LanceAddon 의 종류 번호(4기사는 원래 흰 궤적 그대로).
+        private static readonly Color32[][] Palettes =
+        {
+            null,
+            new[] { new Color32(208, 232, 248, 255), new Color32(152, 200, 248, 255) }, // 블루비틀: 얼음빛
+            new[] { new Color32(255, 222, 150, 255), new Color32(255, 150, 70, 255) },  // 화염기수: 불빛
+            new[] { new Color32(255, 247, 170, 255), new Color32(190, 150, 255, 255) }, // 뇌격기수: 번개빛
+            // 종말기수: 우주 속성. 굵은 몸통까지 물들입니다(세 번째 색) — 몸통은 옅은 별빛, 줄기는 보라, 가는 줄기는 짙은 보라.
+            new[] { new Color32(168, 133, 255, 255), new Color32(104, 64, 200, 255), new Color32(226, 212, 255, 255) },
+        };
+        private static int painting; // 지금 만들고 있는 프레임의 종류
+
+        private static bool HasPalette(int kind)
+        {
+            return kind > 0 && kind < Palettes.Length && Palettes[kind] != null;
+        }
         private const int CoreDepth = 4;   // 가장자리에서 이만큼 들어간 곳이 근처에 있으면 '굵은 몸통'
         private const int CoreReach = 3;
 
-        private static readonly Dictionary<Sprite, Sprite> Frames = new Dictionary<Sprite, Sprite>();
-        private static readonly HashSet<object> PreparedSets = new HashSet<object>();
-        private static readonly HashSet<object> Active = new HashSet<object>(); // 지금 얼음 프레임으로 그릴 애니메이터
+        private static readonly Dictionary<Sprite, Sprite>[] Frames = Enumerable.Range(0, 5).Select(_ => new Dictionary<Sprite, Sprite>()).ToArray();
+        private static readonly HashSet<object>[] PreparedSets = Enumerable.Range(0, 5).Select(_ => new HashSet<object>()).ToArray();
+        private static readonly Dictionary<object, int> Active = new Dictionary<object, int>(); // 지금 전용 프레임으로 그릴 애니메이터 → 종류
+        private static int capturedKind;
 
         // 블루비틀 전용으로 복제한 공격 데이터(이것으로 만들어진 이펙트만 물들입니다)
-        private static readonly HashSet<object> FireData = new HashSet<object>();
+        private static readonly Dictionary<object, int> FireData = new Dictionary<object, int>();
         private static List<object> captured;
         private static bool logged, loggedFailure;
 
@@ -67,13 +82,20 @@ namespace FrostforgedCrescent
         }
 
         /// <summary>이 공격 데이터로 만들어지는 이펙트도 얼음 궤적으로 그립니다.</summary>
-        public static void Claim(UnityEngine.Object fireData)
+        public static void Claim(UnityEngine.Object fireData, int kind)
         {
-            FireData.Add(fireData);
+            FireData[fireData] = kind;
+        }
+
+        /// <summary>이 공격 데이터가 어느 기수의 것인지(이 모드의 것이 아니면 -1)</summary>
+        public static int KindOf(object fireData)
+        {
+            int kind;
+            return fireData != null && FireData.TryGetValue(fireData, out kind) ? kind : -1;
         }
 
         /// <summary>무기 프리팹의 공격 데이터를 이 무기 전용으로 복제해 둡니다(내용은 그대로).</summary>
-        public static void Claim(Component weapon)
+        public static void Claim(Component weapon, int kind)
         {
             foreach (string field in new[] { "basicComboAttacks", "dashAttacks", "specialAttacks", "doubleBasicComboAttacks" })
             {
@@ -89,14 +111,16 @@ namespace FrostforgedCrescent
                     copy.name = data.name;
                     Reflect.Set(copy, "hideFlags", 61);
                     list[i] = copy;
-                    FireData.Add(copy);
+                    FireData[copy] = kind;
                 }
             }
         }
 
         private static void CreatePrefix(object __instance, out bool __state)
         {
-            __state = FireData.Contains(__instance);
+            int kind = KindOf(__instance);
+            __state = HasPalette(kind);
+            capturedKind = kind;
             captured = __state ? new List<object>() : null;
         }
 
@@ -106,7 +130,8 @@ namespace FrostforgedCrescent
             __state = false;
             try
             {
-                __state = LanceAddon.IsBlue(owner) && Convert.ToString(Reflect.Get(__instance, "fromType")) == "DirectAttack";
+                capturedKind = LanceAddon.KindOf(owner);
+                __state = HasPalette(capturedKind) && Convert.ToString(Reflect.Get(__instance, "fromType")) == "DirectAttack";
             }
             catch (Exception)
             {
@@ -123,27 +148,28 @@ namespace FrostforgedCrescent
         private static void Paint(bool __state)
         {
             List<object> list = captured;
+            int kind = capturedKind;
             captured = null;
-            if (!__state || list == null)
+            if (!__state || list == null || !HasPalette(kind))
                 return;
             try
             {
                 foreach (object fx in list)
                     foreach (object animator in Animators(fx))
                     {
-                        Prepare(animator);
-                        Active.Add(animator);
+                        Prepare(animator, kind);
+                        Active[animator] = kind;
                         // 첫 프레임은 이미 그려졌으니 지금 바꿔 줍니다.
                         object renderer = Reflect.Get(animator, "spriteRenderer");
                         var current = Reflect.IsNull(renderer) ? null : Reflect.Get(renderer, "sprite") as Sprite;
                         Sprite frame;
-                        if (!Reflect.IsNull(current) && Frames.TryGetValue(current, out frame))
+                        if (!Reflect.IsNull(current) && Frames[kind].TryGetValue(current, out frame))
                             Reflect.Set(renderer, "sprite", frame);
                     }
                 if (!logged && list.Count > 0)
                 {
                     logged = true;
-                    Log.Info("블루비틀 얼음 궤적 적용 확인 (전용 프레임 " + Frames.Count + "장)");
+                    Log.Info("기수 전용 궤적 적용 확인 (종류 " + kind + ", 전용 프레임 " + Frames[kind].Count + "장)");
                 }
             }
             catch (Exception e)
@@ -173,11 +199,12 @@ namespace FrostforgedCrescent
         }
 
         // 이 애니메이터가 쓰는 그림 묶음의 모든 프레임을 한 번에 얼음 궤적으로 만들어 둡니다.
-        private static void Prepare(object animator)
+        private static void Prepare(object animator, int kind)
         {
             object set = Reflect.Get(animator, "currentSet");
-            if (Reflect.IsNull(set) || !PreparedSets.Add(set))
+            if (Reflect.IsNull(set) || !PreparedSets[kind].Add(set))
                 return;
+            painting = kind;
             var states = Reflect.Get(set, "sprites") as IEnumerable;
             if (states == null)
                 return;
@@ -189,11 +216,11 @@ namespace FrostforgedCrescent
                 foreach (object key in timeline)
                 {
                     var sprite = Reflect.Get(key, "sprite") as Sprite;
-                    if (Reflect.IsNull(sprite) || Frames.ContainsKey(sprite))
+                    if (Reflect.IsNull(sprite) || Frames[kind].ContainsKey(sprite))
                         continue;
-                    Sprite frame = SpriteTint.Remap(sprite, null, 1f, "_FFCIce", IceTrail);
+                    Sprite frame = SpriteTint.Remap(sprite, null, 1f, "_FFC" + kind, IceTrail);
                     if (frame != null)
-                        Frames[sprite] = frame;
+                        Frames[kind][sprite] = frame;
                 }
             }
             SpriteTint.Release();
@@ -201,10 +228,11 @@ namespace FrostforgedCrescent
 
         private static void SetSpritePrefix(object __instance, ref Sprite sprite)
         {
-            if (Active.Count == 0 || Reflect.IsNull(sprite) || !Active.Contains(__instance))
+            int kind;
+            if (Active.Count == 0 || Reflect.IsNull(sprite) || !Active.TryGetValue(__instance, out kind))
                 return;
             Sprite frame;
-            if (Frames.TryGetValue(sprite, out frame))
+            if (Frames[kind].TryGetValue(sprite, out frame))
                 sprite = frame;
         }
 
@@ -285,8 +313,12 @@ namespace FrostforgedCrescent
                     }
                 }
                 if (deepest >= CoreDepth)
-                    continue; // 굵은 몸통: 흰색 그대로
-                Color32 ice = deepest <= 1 ? Accent : Pale;
+                {
+                    if (Palettes[painting].Length > 2) // 몸통 색이 정해진 기수만 몸통도 칠합니다
+                        result[i] = new Color32(Palettes[painting][2].r, Palettes[painting][2].g, Palettes[painting][2].b, c.a);
+                    continue; // 그 밖에는 굵은 몸통은 흰색 그대로
+                }
+                Color32 ice = deepest <= 1 ? Palettes[painting][1] : Palettes[painting][0];
                 result[i] = new Color32(ice.r, ice.g, ice.b, c.a);
             }
             return result;

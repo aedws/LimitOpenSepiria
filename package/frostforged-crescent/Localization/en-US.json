@@ -72,9 +72,9 @@
   "Keyword_FFC_TaegeukCritDmg": "Taegeuk critical damage +{VALUE}",
   "Keyword_FFC_SlashBlack": "Charges every 5s. Centered on the first enemy hit by a basic attack, a black slash splits the screen horizontally: 3 hits every 0.2s after 0.2s [Total damage: 30 + {VALUE} of Cosmic damage]",
   "Keyword_FFC_SlashWhite": "Charges every 5s. Centered on the first enemy hit by a basic attack, a white slash splits the screen vertically: 3 hits every 0.2s after 0.2s [Total damage: 30 + {VALUE} of Cosmic damage]",
-  "Keyword_FFC_SpearBlue": "Charges every 5s. If enemies are near, a water spear strikes [Damage: 30 + {VALUE} of Cosmic damage]",
+  "Keyword_FFC_SpearBlue": "Charges every 5s. If enemies are near, a water spear pierces along your aim, striking enemies in its path [Damage: 30 + {VALUE} of Cosmic damage]",
   "Keyword_FFC_SpearBlueCount": "Water spear strikes {VALUE} time(s)",
-  "Keyword_FFC_SpearRed": "Charges every 5s. If enemies are near, a fire spear strikes [Damage: 30 + {VALUE} of Cosmic damage]",
+  "Keyword_FFC_SpearRed": "Charges every 5s. If enemies are near, a fire spear pierces along your aim, striking enemies in its path [Damage: 30 + {VALUE} of Cosmic damage]",
   "Keyword_FFC_SpearRedCount": "Fire spear strikes {VALUE} time(s)",
   "Item_FFC_PurpleRing_Name": "Purple Ring",
   "Item_FFC_PurpleRing_FlavorText": "Sometimes you just want to look good.",
@@ -107,5 +107,6 @@
   "Item_FFC_Dharani_Name": "Pure Light Dharani Sutra",
   "Item_FFC_Dharani_FlavorText": "Though the world may deceive me, I shall not deceive the world.",
   "Item_FFC_TaegeukGate_Name": "Taegeuk Gate : 'Harmony'",
-  "Item_FFC_TaegeukGate_FlavorText": "This is my own Pure Light Dharani."
+  "Item_FFC_TaegeukGate_FlavorText": "This is my own Pure Light Dharani.",
+  "EffectHUD_FFC_Taegeuk_FlavorText": "A Taegeuk artifact that charges every 5s. It is ready when the shade is gone."
 }

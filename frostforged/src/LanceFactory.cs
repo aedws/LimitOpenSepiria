@@ -237,17 +237,14 @@ namespace FrostforgedCrescent
             addons.SetValue(addon, kept.Count);
             Reflect.Set(simple, "addons", addons);
 
-            // 블루비틀만: 공격 이펙트를 얼음 궤적으로(공격 데이터를 이 무기 전용으로 복제해 표시해 둡니다).
-            if (spec.Kind == LanceAddon.Blue)
+            // 공격 데이터를 이 무기 전용으로 복제해 표시해 둡니다. 기수별로 궤적의 색이 달라집니다(4기사는 원래 흰 궤적).
+            try
             {
-                try
-                {
-                    LanceFx.Claim(simple);
-                }
-                catch (Exception e)
-                {
-                    Log.Warn("블루비틀 공격 이펙트 준비 중 오류: " + e);
-                }
+                LanceFx.Claim(simple, spec.Kind);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("'" + spec.Key + "' 공격 이펙트 준비 중 오류: " + e);
             }
 
             try

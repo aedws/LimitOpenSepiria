@@ -51,7 +51,7 @@ namespace FrostforgedCrescent
             public float SlowUntil, BurstAt, DotUntil, NextTick, LastApply = -999f, Slowed;
         }
 
-        private sealed class Charges { public readonly float[] Time = new float[4]; public float Check, LastCall = -999f; public bool BasicPending; }
+        private sealed class Charges { public readonly float[] Time = new float[4]; public float Check, LastCall = -999f; public bool BasicPending; public readonly bool[] Hud = new bool[4], Ready = new bool[4]; }
 
         private sealed class Delayed { public float At; public Action Run; }
 
@@ -390,6 +390,7 @@ namespace FrostforgedCrescent
                 if (charges.Check > 0f)
                     continue;
                 charges.Check = 0.2f;
+                ShowCharges(avatar, charges);
                 for (int i = 2; i < 4; i++)
                 {
                     if (charges.Time[i] < ChargeTime || Stat(avatar, PowerStats[i]) <= 0)
@@ -398,6 +399,47 @@ namespace FrostforgedCrescent
                     if (target != null)
                         Fire(avatar, charges, i, target, true);
                 }
+            }
+        }
+
+        // 충전 상태 표시: 보유한 태극 아티팩트마다 상태 아이콘을 띄우고, 남은 충전 시간을 아이콘의 가림막으로 보여 줍니다.
+        private static readonly string[] HudNames = { "ChamwolBlack", "ChamwolWhite", "AnnihilationBlue", "FlickerRed" };
+
+        private static void ShowCharges(object avatar, Charges charges)
+        {
+            try
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    string name = "FFC_Taegeuk_" + i;
+                    bool owned = Stat(avatar, PowerStats[i]) > 0;
+                    if (!owned)
+                    {
+                        if (charges.Hud[i])
+                        {
+                            Reflect.Call(avatar, null, "DestroyEffectHUD", name);
+                            charges.Hud[i] = false;
+                        }
+                        continue;
+                    }
+                    if (!charges.Hud[i])
+                    {
+                        string entity = StatusHud.Ensure("FFC_TAEGEUK_" + i, "Item_FFC_" + HudNames[i] + "_Name", "EffectHUD_FFC_Taegeuk_FlavorText", "taegeuk_" + i + ".png");
+                        Reflect.Call(avatar, null, "CreateEffectHUD", entity, name);
+                        Reflect.Call(avatar, null, "SetEffectHUDValue", name, "");
+                        charges.Hud[i] = true;
+                        charges.Ready[i] = false;
+                    }
+                    bool ready = charges.Time[i] >= ChargeTime;
+                    Reflect.Call(avatar, null, "SetEffectHUDFillAmount", name, ready ? 0f : 1f - charges.Time[i] / ChargeTime);
+                    if (ready && !charges.Ready[i])
+                        Reflect.Call(avatar, null, "SetEffectHUDFlash", name); // 충전 완료 번쩍
+                    charges.Ready[i] = ready;
+                }
+            }
+            catch (Exception e)
+            {
+                Fail("충전 표시", e);
             }
         }
 
@@ -532,25 +574,76 @@ namespace FrostforgedCrescent
             CosmicFx.Spawn("ring", middle, 0f, 1.5f, 1.5f, White, 25f, false, -1f);
         }
 
-        // 섬멸·명멸: 창이 옆에서 날아와 가까운 적을 꿰뚫습니다.
+        // 섬멸·명멸: 무녀의 예언의 볼루스파처럼, 창이 캐릭터 뒤에서 나타나 조준(커서) 방향으로 화면을 꿰뚫고 지나갑니다.
+        // 조준 방향 쪽에 적이 있으면 가장 가까운 적을 향하고, 지나가는 길 위의 적 모두에게 피해를 줍니다.
+        private const float SpearReach = 10f, SpearSpeed = 46f, SpearHalfWidth = 1.2f;
+        private static readonly Color BlueTrail = new Color(0.72f, 0.88f, 1f, 1f), RedTrail = new Color(1f, 0.72f, 0.4f, 1f);
+
         private static void Spear(object avatar, int kind, object target)
         {
             Vector3 origin = Position(avatar);
-            if (Dead(target))
-                target = Nearest(avatar, origin, SpearRange + 3f, null);
-            if (target == null)
-                return;
-            Vector3 aim = Position(target);
-            float side = Dice.Next(2) == 0 ? -1f : 1f;
-            const float distance = 9f, speed = 34f;
-            var start = new Vector3(aim.x + side * distance, aim.y + 0.5f, aim.z);
-            FxPlayer fx = CosmicFx.Spawn(kind == 2 ? "spear_blue" : "spear_red", start, side > 0f ? 180f : 0f, 1f, 1f, White, 14f, true, 2f * distance / speed);
+            float dx = 1f, dy = 0f;
+            Component controller = ((Component)avatar).GetComponent(Reflect.GameType("WeaponControllerSimple"));
+            object aimed = Reflect.IsNull(controller) ? null : Reflect.Get(controller, "aimedPositionClientside");
+            if (aimed is Vector3)
+            {
+                dx = ((Vector3)aimed).x - origin.x;
+                dy = ((Vector3)aimed).y - origin.y;
+            }
+            // 조준 방향 쪽(앞쪽)의 가장 가까운 적을 겨눕니다.
+            object focus = null;
+            float best = 15f * 15f;
+            foreach (object creature in Hostiles(avatar))
+            {
+                Vector3 p = Position(creature);
+                float ex = p.x - origin.x, ey = p.y - origin.y, d = ex * ex + ey * ey;
+                if (d <= best && ex * dx + ey * dy >= 0f)
+                {
+                    best = d;
+                    focus = creature;
+                }
+            }
+            if (focus != null)
+            {
+                Vector3 p = Position(focus);
+                dx = p.x - origin.x;
+                dy = p.y - origin.y;
+            }
+            float length = (float)Math.Sqrt(dx * dx + dy * dy);
+            if (length < 0.01f)
+            {
+                dx = 1f;
+                dy = 0f;
+                length = 1f;
+            }
+            float nx = dx / length, ny = dy / length;
+            float angle = (float)(Math.Atan2(ny, nx) * 180.0 / Math.PI);
+            float flight = 2f * SpearReach / SpearSpeed;
+
+            var start = new Vector3(origin.x - nx * SpearReach, origin.y + 0.5f - ny * SpearReach, origin.z);
+            FxPlayer fx = CosmicFx.Spawn(kind == 2 ? "spear_blue" : "spear_red", start, angle, 1f, 1f, White, 20f, true, flight);
             if (fx != null)
-                fx.velocityX = -side * speed;
+            {
+                fx.velocityX = nx * SpearSpeed;
+                fx.velocityY = ny * SpearSpeed;
+            }
+            // 지나간 자리의 잔상: 길 한가운데에, 창이 반쯤 지났을 때
+            Color trail = kind == 2 ? BlueTrail : RedTrail;
+            var middle = new Vector3(origin.x, origin.y + 0.5f, origin.z);
+            Later(flight * 0.5f, () => CosmicFx.Spawn("spear_trail", middle, angle, 2f, 1f, trail, 12f, false, -1f));
+
             float amount = TaegeukAmount(avatar, kind);
             string id = TaegeukPrefix + (kind == 2 ? "SpearBlue" : "SpearRed");
-            object victim = target;
-            Later(distance / speed, () => Hurt(avatar, victim, amount, id));
+            foreach (object creature in Hostiles(avatar).ToList())
+            {
+                Vector3 p = Position(creature);
+                float ex = p.x - origin.x, ey = p.y - origin.y;
+                float along = ex * nx + ey * ny, across = Math.Abs(ex * ny - ey * nx);
+                if (along < -SpearReach || along > SpearReach || across > SpearHalfWidth)
+                    continue;
+                object victim = creature;
+                Later((along + SpearReach) / SpearSpeed, () => Hurt(avatar, victim, amount, id));
+            }
         }
 
         // ── 적 찾기 ───────────────────────────────────────────────────────────

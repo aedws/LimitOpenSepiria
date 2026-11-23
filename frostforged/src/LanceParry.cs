@@ -248,7 +248,7 @@ namespace FrostforgedCrescent
             data.name = source.name + "_FFCBreak";
             Reflect.Set(data, "hideFlags", 61);
             Reflect.Set(data, "swingID", "FURY");
-            LanceFx.Claim(data);
+            LanceFx.Claim(data, LanceFx.KindOf(source)); // 돌파의 궤적도 그 무기의 색으로
             BreakData[source] = data;
             return data;
         }

@@ -45,32 +45,58 @@ def ring():
                 if abs(d-r)<0.6: px[f*fw+x,y]=(255,255,255,a)
     sheet.save(out+'ring.png')
 
-def spear(name,pal):
-    # pal: 윤곽, 어두운 색, 중간 색, 밝은 색, 흰색
-    O,D,M,L,Wh=pal; fw,fh,n=56,16,4; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2; rnd=random.Random(3)
-    head=["....WW......","..WWLLWW....","WWLLLMMMWW..","WLLLMMMMDDWW","WWLLLMMMWW..","..WWLLWW....","....WW......"]   # 오른쪽을 향한 창날(끝이 오른쪽)
+# 섬멸·명멸의 창: 볼루스파처럼 화면을 꿰뚫는 빛줄기. 굵고 흰 심이 앞(오른쪽)으로 뾰족하게 빠지고,
+# 양옆에 길이가 제각각인 결(끝이 계단처럼 끊긴 줄기)이 나란히 붙어 속도감을 냅니다. 프레임마다 결이 조금씩 흔들립니다.
+def spear(name,pale,light,accent):
+    fw,fh,n=160,32,3; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2
+    Wh=(255,255,255,255)
     for f in range(n):
-        body={}
-        for x in range(14,43): body[(x,cy)]=M if (x+f)%5 else L          # 자루
-        for x in range(14,43,6): body[(x,cy)]=D
-        for j,row in enumerate(head):                                    # 창날
-            for i,ch in enumerate(row):
-                if ch!='.': body[(42+i,cy-3+j)]={'W':Wh,'L':L,'M':M,'D':D}[ch]
-        for x in range(2,15):                                            # 꼬리(프레임마다 일렁임)
-            spread=(15-x)//4
-            for dy in range(-spread,spread+1):
-                if rnd.random()<0.55-0.03*(15-x)+(0.25 if dy==0 else 0): body[(x+rnd.randrange(0,2),cy+dy)]=rnd.choice((L,M,M,D))
-        for (x,y) in list(body):
-            for dx,dy in ((1,0),(-1,0),(0,1),(0,-1)):
-                q=(x+dx,y+dy)
-                if q not in body and 0<=q[0]<fw and 0<=q[1]<fh and x>=12: px[f*fw+q[0],q[1]]=O
-        for (x,y),c in body.items():
-            if 0<=x<fw and 0<=y<fh: px[f*fw+x,y]=c
+        rnd=random.Random(11+f)
+        def bar(x0,x1,y,color,th=1):
+            for x in range(max(0,x0),min(fw,x1)):
+                for t in range(th):
+                    if 0<=y+t<fh: px[f*fw+x,y+t]=color
+        # 결: 가운데에서 멀수록 짧고 옅게. 끝은 2~4픽셀씩 계단으로 끊깁니다.
+        for side in (-1,1):
+            for k in range(1,8):
+                dy=side*(k*2-(f%2)*(k%2))
+                length=int((118-k*13)*rnd.uniform(0.8,1.1)); start=int(rnd.uniform(4,34))+k*5
+                color=pale if k<3 else light if k<6 else accent
+                th=2 if k<3 else 1
+                y=cy+dy-(th-1 if side<0 else 0)
+                bar(start,start+length,y,color,th)
+                step=rnd.randrange(2,5)                      # 계단 끝
+                bar(start+length,start+length+step*2,y+(0 if side<0 else th-1),color,1)
+                bar(start-step*2,start,y+(th-1 if side<0 else 0),color,1)
+                if rnd.random()<0.5: bar(start-step*5,start-step*3,y,accent,1)   # 떨어져 나간 조각
+        # 심: 뒤는 뭉툭, 앞은 뾰족
+        for x in range(10,fw-2):
+            t=(x-10)/(fw-12)
+            half=3.6*(1-max(0.0,(t-0.62)/0.38)**1.4)*min(1.0,t/0.08+0.35)
+            h=int(round(half))
+            for y in range(cy-h,cy+h+1): px[f*fw+x,y]=Wh
+            if h>=2:                                         # 심 가장자리에 옅은 테
+                px[f*fw+x,cy-h-1]=pale; px[f*fw+x,cy+h+1]=pale
     sheet.save(out+name+'.png')
+
+# 창이 지나간 자리: 가는 줄기 몇 가닥과 십자 반짝임이 옅어지며 사라집니다(흰색으로 그리고 게임에서 색을 입힙니다).
+def spear_trail():
+    fw,fh,n=160,32,4; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2; rnd=random.Random(5)
+    lines=[(rnd.randrange(0,90),rnd.randrange(30,70),cy+rnd.randrange(-9,10)) for _ in range(9)]
+    stars=[(rnd.randrange(10,150),cy+rnd.randrange(-11,12)) for _ in range(7)]
+    for f in range(n):
+        a=(230,170,110,55)[f]
+        for (x0,L,y) in lines[:9-f*2]:
+            for x in range(x0+f*6,min(fw,x0+L-f*4)): px[f*fw+x,y]=(255,255,255,a)
+        for (x,y) in stars[f:]:
+            for dx,dy in ((0,0),(1,0),(-1,0),(0,1),(0,-1)):
+                if 0<=x+dx<fw and 0<=y+dy<fh: px[f*fw+x+dx,y+dy]=(255,255,255,min(255,a+25))
+    sheet.save(out+'spear_trail.png')
 
 cut('cut_black',(14,10,24,255),(255,255,255,255),(236,236,246,255))
 cut('cut_white',(255,255,255,255),(151,199,254,255),(190,214,255,255))
 needle()
 ring()
-spear('spear_blue',((20,30,70,255),(59,81,130,255),(100,153,232,255),(170,226,255,255),(255,255,255,255)))
-spear('spear_red',((70,20,24,255),(183,50,39,255),(237,120,46,255),(255,214,110,255),(255,255,255,255)))
+spear('spear_blue',(222,240,255,255),(176,218,255,255),(120,180,250,255))
+spear('spear_red',(255,240,190,255),(255,178,90,255),(232,96,52,255))
+spear_trail()

@@ -72,9 +72,9 @@
   "Keyword_FFC_TaegeukCritDmg": "태극의 치명타 피해량 +{VALUE}",
   "Keyword_FFC_SlashBlack": "5초마다 충전. 일반 공격에 처음 맞은 적을 중심으로 화면을 가로로 가르는 흑색 참격. 0.2초 뒤부터 0.2초마다 3타 [총 피해량: 30 + 우주 속성 피해 {VALUE}]",
   "Keyword_FFC_SlashWhite": "5초마다 충전. 일반 공격에 처음 맞은 적을 중심으로 화면을 세로로 가르는 백색 참격. 0.2초 뒤부터 0.2초마다 3타 [총 피해량: 30 + 우주 속성 피해 {VALUE}]",
-  "Keyword_FFC_SpearBlue": "5초마다 충전. 주변에 적이 있으면 물빛 창이 날아와 공격 [피해량: 30 + 우주 속성 피해 {VALUE}]",
+  "Keyword_FFC_SpearBlue": "5초마다 충전. 주변에 적이 있으면 물빛 창이 조준 방향으로 꿰뚫고 지나가며 길 위의 적을 공격 [피해량: 30 + 우주 속성 피해 {VALUE}]",
   "Keyword_FFC_SpearBlueCount": "물빛 창 {VALUE}회 공격",
-  "Keyword_FFC_SpearRed": "5초마다 충전. 주변에 적이 있으면 불창이 날아와 공격 [피해량: 30 + 우주 속성 피해 {VALUE}]",
+  "Keyword_FFC_SpearRed": "5초마다 충전. 주변에 적이 있으면 불창이 조준 방향으로 꿰뚫고 지나가며 길 위의 적을 공격 [피해량: 30 + 우주 속성 피해 {VALUE}]",
   "Keyword_FFC_SpearRedCount": "불창 {VALUE}회 공격",
   "Item_FFC_PurpleRing_Name": "자색 반지",
   "Item_FFC_PurpleRing_FlavorText": "멋 부리고 싶을 때도 있는 법이지.",
@@ -107,5 +107,6 @@
   "Item_FFC_Dharani_Name": "무구정광대다라니경",
   "Item_FFC_Dharani_FlavorText": "세상이 나를 속이려 들 지언정, 내가 세상을 속이지 않으리라.",
   "Item_FFC_TaegeukGate_Name": "태극문 : '조화'",
-  "Item_FFC_TaegeukGate_FlavorText": "이것은 나만의 무구정광대다라니."
+  "Item_FFC_TaegeukGate_FlavorText": "이것은 나만의 무구정광대다라니.",
+  "EffectHUD_FFC_Taegeuk_FlavorText": "5초마다 충전되는 태극 아티팩트. 가림막이 걷히면 충전이 끝난 것입니다."
 }
