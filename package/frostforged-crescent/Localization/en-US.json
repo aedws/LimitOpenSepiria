@@ -42,7 +42,8 @@
   "Weapon_FFC_ThunderRider_Name": "Thunder Rider",
   "WeaponAddon_FFC_ThunderRider_Effect": "On hit, spends a dark cloud to strike; with no dark cloud, strikes with a 50% weakened one instead.\nEvery enemy hit by the weapon is struck, without limit.\nWhen Cloudseed Arrowhead's empower chance exceeds 100%, the excess stacks as a damage multiplier (+1x per 100%).\nInherits every effect of Myriad Lance : Four Horsemen.",
   "Weapon_FFC_DoomRider_Name": "Doom Rider",
-  "WeaponAddon_FFC_DoomRider_Effect": "Critical chance +20%, critical damage +50%\nInherits every effect of Myriad Lance : Four Horsemen.",
+  "WeaponAddon_FFC_DoomRider_Effect": "Critical chance +20%, critical damage +50%\nWeapon attacks deal [Cosmic] damage, calculated only from your Cosmic damage and independent of other elements.\nCosmic damage +40\nInherits every effect of Myriad Lance : Four Horsemen.",
   "EffectHUD_FFC_Feather_Name": "Flame Pinion",
-  "EffectHUD_FFC_Feather_FlavorText": "Counts as a Sun Sword and is used when Sun Swords run out. At 20 or more: attack speed +100%, burn stacks +3."
+  "EffectHUD_FFC_Feather_FlavorText": "Counts as a Sun Sword and is used when Sun Swords run out. At 20 or more: attack speed +100%, burn stacks +3.",
+  "Keyword_FFC_Cosmic": "Cosmic damage +{VALUE}"
 }

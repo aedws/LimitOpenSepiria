@@ -118,6 +118,23 @@ namespace FrostforgedCrescent
             return value == 2 || value == 4 || value == 6 || value == 7;
         }
 
+        /// <summary>우주 속성의 표시 색(별빛 보라)</summary>
+        public static readonly Color CosmicColor = new Color(0.66f, 0.52f, 1f, 1f);
+
+        // 종말기수의 무기 공격을 우주 속성으로 표시합니다. 게임의 속성 목록에는 없는 속성이라, 내부적으로는 어느 속성에도
+        // 속하지 않는 피해(Normal)로 두고 피해 숫자의 색만 우주 속성 색으로 바꿉니다. 혼돈 판정은 아닙니다.
+        private static void MarkCosmic(object damage)
+        {
+            if (fromType == null || Convert.ToInt32(fromType.GetValue(damage)) != 1) // DirectAttack
+                return;
+            string id = damageId == null ? null : damageId.GetValue(damage) as string;
+            if (id == null || !id.StartsWith("Weapon_"))
+                return;
+            elemental.SetValue(damage, Enum.ToObject(elemental.FieldType, 5)); // Normal
+            Reflect.Call(damage, null, "SetCustomColor", false, CosmicColor);
+            LogOnce(7, "종말기수 확인: 무기 공격을 우주 속성 피해로 처리");
+        }
+
         // 피해가 계산되기 전: 얼음 속성 공격의 치명타 확률.
         private static void DamagePrefix(object damage)
         {
@@ -128,6 +145,8 @@ namespace FrostforgedCrescent
                 object attacker = origin.GetValue(damage);
                 if (Reflect.IsNull(attacker) || !avatarType.IsInstanceOfType(attacker))
                     return;
+                if (LanceAddon.KindOf(attacker) == LanceAddon.Doom)
+                    MarkCosmic(damage);
                 if (!IsIce(elemental.GetValue(damage)))
                     return;
                 int bonus = Stat(attacker, ItemContent.IceCrit);
@@ -225,6 +244,13 @@ namespace FrostforgedCrescent
             {
                 if (Reflect.IsNull(owner) || getStat == null)
                     return;
+                if (LanceAddon.KindOf(owner) == LanceAddon.Doom)
+                {
+                    // 종말기수: 무기 공격은 우주 속성 피해 수치만으로 계산합니다.
+                    __result = Math.Max(1, Stat(owner, ItemContent.Cosmic));
+                    result = EDamageElementalType.Normal;
+                    return;
+                }
                 int reduce = Stat(owner, ItemContent.WeaponToIce);
                 if (reduce <= 0)
                     return;

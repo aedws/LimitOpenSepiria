@@ -32,6 +32,8 @@ namespace FrostforgedCrescent
         public const string LanceDash = "FFCLANCEDASH";
         public const string LanceIceCrit = "FFCLANCEICECRIT";
         public const string LanceIceCritDamage = "FFCLANCEICECRITDMG";
+        // 우주 속성 피해: 이 모드가 추가하는 속성. 종말기수의 무기 공격이 이 수치만으로 계산됩니다.
+        public const string Cosmic = "FFCCOSMIC";
 
         private sealed class CustomStat
         {
@@ -53,6 +55,7 @@ namespace FrostforgedCrescent
             new CustomStat { Id = "FFC_LANCE_DASH", Key = LanceDash, Keyword = "FFC_LanceDash", Symbol = "%", ShowValue = true },
             new CustomStat { Id = "FFC_LANCE_ICE_CRIT", Key = LanceIceCrit, Keyword = "FFC_LanceIceCrit", Symbol = "%", ShowValue = true },
             new CustomStat { Id = "FFC_LANCE_ICE_CRITDMG", Key = LanceIceCritDamage, Keyword = "FFC_LanceIceCritDmg", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_COSMIC_DAMAGE", Key = Cosmic, Keyword = "FFC_Cosmic", Symbol = "", ShowValue = true },
             new CustomStat { Id = "FFC_LANCE_ONLY", Key = "FFCLANCEONLY", Keyword = "FFC_LanceOnly", Symbol = "", ShowValue = false },
         };
 

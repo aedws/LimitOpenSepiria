@@ -57,7 +57,10 @@ namespace FrostforgedCrescent
                 {
                     statApplied = AddAttackSpeed(AttackSpeedBonus);
                     if (kind == Doom) // 종말기수: 치명타 확률 +20%(능력치는 0.01% 단위), 치명타 피해 +50%
+                    {
                         doomApplied = AddStat("Critical", 2000) & AddStat("CriticalDamageBonus", 50);
+                        AddCosmic(CosmicBase); // 우주 속성 피해
+                    }
                     Riders.OnEquip(avatar, kind);
                 }
                 Log.Info("기사창 무기 효과 활성화 (종류 " + kind + ", 공격 속도 +" + AttackSpeedBonus + "% " + (statApplied ? "적용" : "미적용") + ")");
@@ -82,6 +85,7 @@ namespace FrostforgedCrescent
                 {
                     AddStat("Critical", -2000);
                     AddStat("CriticalDamageBonus", -50);
+                    AddCosmic(-CosmicBase);
                 }
                 doomApplied = false;
                 if (statApplied)
@@ -122,6 +126,16 @@ namespace FrostforgedCrescent
                 return;
             if (AddStat("DashRecovery", value - dashApplied))
                 dashApplied = value;
+        }
+
+        /// <summary>종말기수가 주는 우주 속성 피해</summary>
+        public const int CosmicBase = 40;
+
+        private void AddCosmic(int value)
+        {
+            MethodInfo add = Reflect.IsNull(avatar) ? null : avatar.GetType().GetMethod("AddCustomStatUnsafe", new[] { typeof(string), typeof(int) });
+            if (add != null)
+                add.Invoke(avatar, new object[] { ItemContent.Cosmic, value });
         }
 
         private bool AddAttackSpeed(int value)
