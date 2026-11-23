@@ -34,6 +34,7 @@ namespace FrostforgedCrescent
                     WeakSpear.Apply(harmony);
                     LanceFx.Apply(harmony);
                     LanceParry.Apply(harmony);
+                    Riders.Apply(harmony);
                 }
                 catch (Exception e)
                 {

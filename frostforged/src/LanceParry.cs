@@ -28,12 +28,7 @@ namespace FrostforgedCrescent
         public const float DashSpeed = 26f;        // 돌파 속도(칸/초)
         public const float DashTime = 0.18f;       // 돌파 시간(초)
         private const float BreakInterval = 0.25f; // 돌파 연타 간격(초)
-        private const string HudTemplate = "CHARGEDSWEEP"; // 숫자를 띄울 수 있는 게임의 상태 표시(틀로만 씁니다)
-        private const string HudEntity = "FFC_FURY";       // 그 틀을 복제해 이름·설명·아이콘을 바꾼 전용 표시
         private const string HudName = "FFC_BlueBeetle_Fury";
-        private static GameObject hudHolder, hudPrefab;
-        private static UnityEngine.Object hudEntity;
-        private static bool loggedHud;
 
         private sealed class State { public int Fury; public long ArmedTicks; public long BreakTicks; public bool Hud; }
 
@@ -102,7 +97,7 @@ namespace FrostforgedCrescent
         {
             try
             {
-                return Math.Max(0, ItemEffects.Stat(avatar, key));
+                return LanceAddon.IsBlue(avatar) ? Math.Max(0, ItemEffects.Stat(avatar, key)) : 0;
             }
             catch (Exception)
             {
@@ -211,79 +206,6 @@ namespace FrostforgedCrescent
             }
         }
 
-        /// <summary>
-        /// 퓨리 전용 상태 표시를 게임의 상태 표시 목록에 넣습니다. 목록은 월드에 들어갈 때마다 새로 만들어지므로 쓸 때마다 확인합니다.
-        /// 넣지 못하면 틀로 쓰는 표시의 이름을 돌려줍니다.
-        /// </summary>
-        public static string EnsureHud()
-        {
-            try
-            {
-                Type database = Reflect.GameType("EffectHUDDatabase");
-                var all = Reflect.GetStatic(database, "effectHUDDictionary") as IDictionary;
-                if (all == null)
-                    return HudTemplate;
-                if (all.Contains(HudEntity) && !Reflect.IsNull(all[HudEntity]))
-                    return HudEntity;
-                if (Reflect.IsNull(hudEntity) || Reflect.IsNull(hudPrefab))
-                {
-                    object template = all.Contains(HudTemplate) ? all[HudTemplate] : null;
-                    var source = Reflect.IsNull(template) ? null : Reflect.Get(template, "hudPrefab") as GameObject;
-                    if (Reflect.IsNull(source))
-                        return HudTemplate;
-                    if (Reflect.IsNull(hudHolder))
-                    {
-                        hudHolder = new GameObject("FrostforgedCrescent_Hud");
-                        hudHolder.SetActive(false);
-                        Reflect.Set(hudHolder, "hideFlags", 61);
-                        UnityEngine.Object.DontDestroyOnLoad(hudHolder);
-                    }
-                    hudPrefab = (GameObject)UnityEngine.Object.Instantiate(source, hudHolder.transform);
-                    hudPrefab.name = "EffectHUD_FFC_Fury";
-                    Component hud = hudPrefab.GetComponent(Reflect.GameType("UI_EffectHUD_Basic"));
-                    Type localized = Reflect.GameType("LocalizedString");
-                    Reflect.Set(hud, "effectName", Activator.CreateInstance(localized, "EffectHUD_FFC_Fury_Name"));
-                    Reflect.Set(hud, "effectFlavorText", Activator.CreateInstance(localized, "EffectHUD_FFC_Fury_FlavorText"));
-                    PaintHudIcon(hud);
-
-                    hudEntity = ScriptableObject.CreateInstance(Reflect.GameType("EffectHUDEntity"));
-                    hudEntity.name = "FFC_Fury";
-                    Reflect.Set(hudEntity, "hideFlags", 61);
-                    Reflect.Set(hudEntity, "id", HudEntity);
-                    Reflect.Set(hudEntity, "hudPrefab", hudPrefab);
-                }
-                all[HudEntity] = hudEntity;
-                return HudEntity;
-            }
-            catch (Exception e)
-            {
-                Fail("퓨리 표시 준비", e);
-                return HudTemplate;
-            }
-        }
-
-        // 복제한 상태 표시의 아이콘 그림을 퓨리 아이콘으로 바꿉니다(덧씌우는 흰 번쩍임과 채움 그림은 그대로).
-        private static void PaintHudIcon(Component hud)
-        {
-            object icon = SpriteLoader.Load(System.IO.Path.Combine(Entry.packageRoot ?? "", "Sprites", "fury.png"), null, "퓨리 아이콘");
-            Type image = Reflect.UnityType("UnityEngine.UI.Image", "UnityEngine.UI");
-            MethodInfo find = typeof(GameObject).GetMethod("GetComponentsInChildren", new[] { typeof(Type), typeof(bool) });
-            if (icon == null || image == null || find == null)
-                return;
-            object overlay = Reflect.Get(hud, "whiteOverlayImage"), fill = Reflect.Get(hud, "fillImage");
-            var images = ((IEnumerable)find.Invoke(hudPrefab, new object[] { image, true })).Cast<object>().ToList();
-            object target = images.FirstOrDefault(i => !ReferenceEquals(i, overlay) && !ReferenceEquals(i, fill) && !Reflect.IsNull(Reflect.Get(i, "sprite")));
-            if (!loggedHud)
-            {
-                loggedHud = true;
-                Log.Info("퓨리 표시 구성: " + string.Join(", ", images.Select(i => ((UnityEngine.Object)i).name + "="
-                         + (Reflect.IsNull(Reflect.Get(i, "sprite")) ? "없음" : ((UnityEngine.Object)Reflect.Get(i, "sprite")).name)
-                         + (ReferenceEquals(i, target) ? "(교체)" : "")).ToArray()));
-            }
-            if (target != null)
-                Reflect.Set(target, "sprite", icon);
-        }
-
         private static void SetFury(object avatar, State state, int value)
         {
             state.Fury = value;
@@ -293,7 +215,7 @@ namespace FrostforgedCrescent
                 {
                     if (!state.Hud)
                     {
-                        Reflect.Call(avatar, null, "CreateEffectHUD", EnsureHud(), HudName);
+                        Reflect.Call(avatar, null, "CreateEffectHUD", StatusHud.Ensure("FFC_FURY", "EffectHUD_FFC_Fury_Name", "EffectHUD_FFC_Fury_FlavorText", "fury.png"), HudName);
                         state.Hud = true;
                     }
                     Reflect.Call(avatar, null, "SetEffectHUDValue", HudName, value.ToString());

@@ -106,7 +106,7 @@ namespace FrostforgedCrescent
             __state = false;
             try
             {
-                __state = LanceAddon.IsWielding(owner) && Convert.ToString(Reflect.Get(__instance, "fromType")) == "DirectAttack";
+                __state = LanceAddon.IsBlue(owner) && Convert.ToString(Reflect.Get(__instance, "fromType")) == "DirectAttack";
             }
             catch (Exception)
             {

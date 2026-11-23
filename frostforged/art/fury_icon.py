@@ -12,3 +12,17 @@ for i in range(10): px[4+i,13-i]=W                 # 창 자루
 for p in ((11,4),(12,4),(13,5),(13,6),(12,5),(11,5),(12,6),(10,5),(12,7)): px[p]=W   # 창끝
 for p in ((4,9),(5,8),(6,7),(8,13),(9,12),(10,11)): px[p]=C    # 돌진선
 im.save(sys.argv[1]); im.resize((180,180),Image.NEAREST).save(sys.argv[2])
+
+# 화염기수의 화염 날개 깃 상태 아이콘
+B2=(200,72,48,255); Y=(255,228,135,255)
+im=Image.new('RGBA',(18,18),(0,0,0,0)); px=im.load()
+for y in range(18):
+    for x in range(18):
+        if (x in (0,17) and y in (0,17)): continue
+        edge=min(x,y,17-x,17-y)
+        px[x,y]=K if edge<2 or (x in (2,15) and y in (2,15)) else B2
+for i in range(9): px[5+i,13-i]=W                                  # 깃대
+for p in ((9,5),(10,5),(11,4),(8,6),(9,6),(7,7),(8,7),(6,8),(7,8),(6,9),(5,10),(6,10),(5,11)): px[p]=Y   # 위쪽 깃가지
+for p in ((12,7),(13,6),(11,8),(12,8),(10,9),(11,9),(9,10),(10,10),(8,11),(9,11),(7,12)): px[p]=W   # 아래쪽 깃가지
+import os
+im.save(os.path.join(os.path.dirname(sys.argv[1]),'feather.png'))

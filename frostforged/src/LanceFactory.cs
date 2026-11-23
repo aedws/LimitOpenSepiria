@@ -18,30 +18,53 @@ namespace FrostforgedCrescent
     /// </summary>
     internal static class LanceFactory
     {
-        public const int WeaponId = 9101402;
-        public const string NameKey = "Weapon_FFC_BlueBeetle_Name";
-        public const string EffectKey = "WeaponAddon_FFC_BlueBeetle_Effect";
-        private const string NetworkKey = Entry.ModId + ":weapon-bluebeetle";
+        public const int WeaponId = 9101402; // 서리기수 : 돌격창 블루비틀
+
+        // 만드는 무기들. 문구 키는 Weapon_FFC_<Key>_Name / WeaponAddon_FFC_<Key>_Effect 입니다.
+        private sealed class Spec
+        {
+            public int Kind, Id;
+            public string Key, Sprite, Icon;
+            public GameObject Prefab;
+            public UnityEngine.Object Entity;
+        }
+
+        private static readonly Spec[] Specs =
+        {
+            new Spec { Kind = LanceAddon.Knight, Id = 9101403, Key = "Knight", Sprite = "lance_knight.png", Icon = "lance_knight_icon.png" },
+            new Spec { Kind = LanceAddon.Blue, Id = WeaponId, Key = "BlueBeetle", Sprite = "lance.png", Icon = "lance_icon.png" },
+            new Spec { Kind = LanceAddon.Flame, Id = 9101404, Key = "FlameRider", Sprite = "lance_flame.png", Icon = "lance_flame_icon.png" },
+            new Spec { Kind = LanceAddon.Thunder, Id = 9101405, Key = "ThunderRider", Sprite = "lance_thunder.png", Icon = "lance_thunder_icon.png" },
+            new Spec { Kind = LanceAddon.Doom, Id = 9101406, Key = "DoomRider", Sprite = "lance_doom.png", Icon = "lance_doom_icon.png" },
+        };
 
         private static readonly string[] BodyNames = { "기오로이드", "Gioroid", "Gyoroid" };
         private static readonly string[] LookNames = { "무녀의 예언", "Voluspa", "Völuspá", "Prophecy of the Seeress" };
         private static readonly string[] ParentNames = { "백상의 봉" };
 
+        /// <summary>무기 ID 로 종류를 찾습니다(이 모드의 기사창이 아니면 -1).</summary>
+        public static int KindOfId(int weaponId)
+        {
+            foreach (Spec spec in Specs)
+                if (spec.Id == weaponId)
+                    return spec.Kind;
+            return -1;
+        }
+
         private const float DefaultShift = 3f; // 전용 그림을 창끝 쪽으로 미는 픽셀 수
         private static GameObject holder;
-        private static GameObject prefab;
-        private static UnityEngine.Object entity;
-        private static bool failed;
+        private static bool failed, built;
 
         public static void Register(string packageRoot)
         {
             try
             {
                 Type database = Reflect.GameType("WeaponDatabase");
-                if (!failed && (Reflect.IsNull(entity) || Reflect.IsNull(prefab)))
+                if (!failed && (!built || Specs.Any(x => Reflect.IsNull(x.Entity) || Reflect.IsNull(x.Prefab))))
                     Build(database, packageRoot);
-                if (!Reflect.IsNull(entity))
-                    Reflect.Call(null, database, "Register", entity);
+                foreach (Spec spec in Specs)
+                    if (!Reflect.IsNull(spec.Entity))
+                        Reflect.Call(null, database, "Register", spec.Entity);
             }
             catch (Exception e)
             {
@@ -146,14 +169,19 @@ namespace FrostforgedCrescent
             object look = ByName(weapons, LookNames) ?? weapons.FirstOrDefault(HasSpearStat);
             object parent = ByName(weapons, ParentNames);
             if (look == null)
-                Log.Warn("'무녀의 예언'을 찾지 못해 블루비틀이 기오로이드의 그림을 푸르게 칠해 씁니다.");
+                Log.Warn("'무녀의 예언'을 찾지 못해 쥐는 위치를 기오로이드의 그림에서 가져옵니다.");
             if (parent == null)
-                Log.Warn("'백상의 봉'을 찾지 못해 블루비틀을 기오로이드의 강화 무기로 등록합니다.");
+                Log.Warn("'백상의 봉'을 찾지 못해 만변창 : 4기사를 기오로이드와 같은 갈래에 등록합니다.");
 
             var bodyPrefab = (GameObject)Reflect.Get(body, "mainWeaponPrefab");
-            Log.Info("블루비틀 구성: 몸체 #" + Reflect.Get(body, "id") + " " + DisplayName(body) + " (" + bodyPrefab.name + ")"
-                     + ", 그림 " + (look == null ? "없음" : "#" + Reflect.Get(look, "id") + " " + DisplayName(look))
-                     + ", 상위 " + (parent == null ? "없음" : "#" + Reflect.Get(parent, "id") + " " + DisplayName(parent)));
+            // 만변창 : 4기사는 봉의 2단계 새 갈래입니다: '백상의 봉'과 같은 무기에서 갈라져 나옵니다(백상의 봉이 1단계면 그 아래).
+            object anchor = parent ?? body;
+            int anchorParent = Convert.ToInt32(Reflect.Get(anchor, "enhanceFromId"));
+            int knightParent = anchorParent >= 0 ? anchorParent : Convert.ToInt32(Reflect.Get(anchor, "id"));
+            Log.Info("기사창 구성: 몸체 #" + Reflect.Get(body, "id") + " " + DisplayName(body) + " (" + bodyPrefab.name + ")"
+                     + ", 그림 기준 " + (look == null ? "없음" : "#" + Reflect.Get(look, "id") + " " + DisplayName(look))
+                     + ", 백상의 봉 " + (parent == null ? "없음" : "#" + Reflect.Get(parent, "id") + " (상위 #" + anchorParent + ")")
+                     + " → 만변창의 상위 #" + knightParent);
 
             if (Reflect.IsNull(holder))
             {
@@ -162,77 +190,103 @@ namespace FrostforgedCrescent
                 Reflect.Set(holder, "hideFlags", 61);
                 UnityEngine.Object.DontDestroyOnLoad(holder);
             }
-            prefab = (GameObject)UnityEngine.Object.Instantiate(bodyPrefab, holder.transform);
-            prefab.name = "Weapon-FFC-BlueBeetle";
+            int knightId = Specs.First(x => x.Kind == LanceAddon.Knight).Id;
+            foreach (Spec spec in Specs)
+            {
+                try
+                {
+                    BuildOne(spec, body, bodyPrefab, look, spec.Kind == LanceAddon.Knight ? knightParent : knightId, packageRoot);
+                }
+                catch (Exception e)
+                {
+                    Log.Error("무기 '" + spec.Key + "' 준비 중 오류: " + e);
+                }
+            }
+            built = true;
+            SpriteTint.Release();
+        }
+
+        private static bool describedAddons;
+
+        private static void BuildOne(Spec spec, object body, GameObject bodyPrefab, object look, int parentId, string packageRoot)
+        {
+            GameObject prefab = (GameObject)UnityEngine.Object.Instantiate(bodyPrefab, holder.transform);
+            prefab.name = "Weapon-FFC-" + spec.Key;
             Component simple = prefab.GetComponent(typeof(WeaponSimple));
 
-            // 무기 효과: 기오로이드의 것 중 설명에 '창격'이 들어간 것만 남기고(못 가리면 전부), 블루비틀의 효과를 붙입니다.
+            // 무기 효과: 기오로이드의 것 중 설명에 '창격'이 들어간 것만 남기고(못 가리면 전부), 이 무기의 효과를 붙입니다.
             List<object> inherited = Addons(simple);
             List<object> kept = inherited.Where(a => SpearNames.Any(n => EffectText(a).IndexOf(n, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
             if (kept.Count == 0)
                 kept = inherited;
-            Log.Info("블루비틀 몸체: " + simple.GetType().Name + ", 기본 공격 " + Count(simple, "basicComboAttacks") + "타, 무기 효과 " + inherited.Count + "개 중 " + kept.Count + "개 계승");
-            foreach (object a in inherited)
-                Log.Info("  " + (kept.Contains(a) ? "[계승] " : "[제외] ") + DescribeAddon(a));
-            if (look != null)
-                foreach (object a in Addons(Simple(look)))
-                    Log.Info("  [무녀의 예언] " + DescribeAddon(a));
+            if (!describedAddons)
+            {
+                describedAddons = true;
+                Log.Info("기사창 몸체: " + simple.GetType().Name + ", 기본 공격 " + Count(simple, "basicComboAttacks") + "타, 무기 효과 " + inherited.Count + "개 중 " + kept.Count + "개 계승");
+                foreach (object a in inherited)
+                    Log.Info("  " + (kept.Contains(a) ? "[계승] " : "[제외] ") + DescribeAddon(a));
+            }
             var addon = (LanceAddon)prefab.AddComponent(typeof(LanceAddon));
             addon.parent = (WeaponSimple)simple;
             addon.enabled = true;
-            Reflect.Set(addon, "effectText", NewLocalizedString(EffectKey));
+            addon.kind = spec.Kind;
+            Reflect.Set(addon, "effectText", NewLocalizedString("WeaponAddon_FFC_" + spec.Key + "_Effect"));
             Array addons = Array.CreateInstance(typeof(WeaponAddon), kept.Count + 1);
             for (int i = 0; i < kept.Count; i++)
                 addons.SetValue(kept[i], i);
             addons.SetValue(addon, kept.Count);
             Reflect.Set(simple, "addons", addons);
 
-            // 공격 이펙트를 얼음빛으로: 공격 데이터를 이 무기 전용으로 복제해 표시해 둡니다.
+            // 블루비틀만: 공격 이펙트를 얼음 궤적으로(공격 데이터를 이 무기 전용으로 복제해 표시해 둡니다).
+            if (spec.Kind == LanceAddon.Blue)
+            {
+                try
+                {
+                    LanceFx.Claim(simple);
+                }
+                catch (Exception e)
+                {
+                    Log.Warn("블루비틀 공격 이펙트 준비 중 오류: " + e);
+                }
+            }
+
             try
             {
-                LanceFx.Claim(simple);
+                ApplyLook(simple, look == null ? null : Simple(look), packageRoot, spec.Sprite);
             }
             catch (Exception e)
             {
-                Log.Warn("블루비틀 공격 이펙트 준비 중 오류: " + e);
+                Log.Warn("'" + spec.Key + "' 그림을 넣지 못해 기오로이드의 그림을 씁니다: " + e);
             }
 
-            try
-            {
-                ApplyLook(simple, look == null ? null : Simple(look), packageRoot);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("블루비틀 그림을 넣지 못해 기오로이드의 그림을 씁니다: " + e);
-            }
-
-            if (!HorayModAPI.RegisterNetworkPrefab(prefab, NetworkKey))
-                Log.Warn("블루비틀 네트워크 프리팹 등록에 실패했습니다. 멀티플레이에서 무기가 보이지 않을 수 있습니다.");
+            if (!HorayModAPI.RegisterNetworkPrefab(prefab, Entry.ModId + ":weapon-" + spec.Key.ToLowerInvariant()))
+                Log.Warn("'" + spec.Key + "' 네트워크 프리팹 등록에 실패했습니다. 멀티플레이에서 무기가 보이지 않을 수 있습니다.");
 
             object iconSource = look ?? body;
             var icon = Reflect.Get(iconSource, "icon") as Sprite;
-            var bigIcon = Reflect.Get(iconSource, "bigIcon") as Sprite;
             Type entityType = Reflect.GameType("WeaponEntity");
             UnityEngine.Object created = ScriptableObject.CreateInstance(entityType);
-            created.name = "FFC_BlueBeetle";
+            created.name = "FFC_" + spec.Key;
             Reflect.Set(created, "hideFlags", 61);
-            Reflect.Set(created, "id", WeaponId);
+            Reflect.Set(created, "id", spec.Id);
             Reflect.Set(created, "enabled", true);
             Reflect.Set(created, "activeState", Reflect.Get(body, "activeState"));
-            Reflect.Set(created, "aName", NewLocalizedString(NameKey));
-            object customIcon = SpriteLoader.Load(Path.Combine(packageRoot, "Sprites", "lance_icon.png"), icon, "블루비틀 아이콘");
-            Reflect.Set(created, "icon", customIcon ?? SpriteTint.Bluer(icon, null, 1f) ?? icon);
-            Reflect.Set(created, "bigIcon", customIcon != null || Reflect.IsNull(bigIcon) ? null : (SpriteTint.Bluer(bigIcon, null, 1f) ?? bigIcon));
+            Reflect.Set(created, "aName", NewLocalizedString("Weapon_FFC_" + spec.Key + "_Name"));
+            object customIcon = SpriteLoader.Load(Path.Combine(packageRoot, "Sprites", spec.Icon), icon, "'" + spec.Key + "' 아이콘");
+            Reflect.Set(created, "icon", customIcon ?? Reflect.Get(body, "icon"));
+            Reflect.Set(created, "bigIcon", customIcon != null ? null : Reflect.Get(body, "bigIcon"));
             Reflect.Set(created, "mainWeaponPrefab", prefab);
             Reflect.Set(created, "subWeaponPrefab", Reflect.Get(body, "subWeaponPrefab"));
             Reflect.Set(created, "standardEnhancements", Activator.CreateInstance(typeof(List<>).MakeGenericType(Reflect.GameType("EnhancementMetadata"))));
             Reflect.Set(created, "isDefaultWeapon", false);
-            Reflect.Set(created, "enhanceFromId", (int)Reflect.Get(parent ?? body, "id"));
-            entity = created;
-            SpriteTint.Release();
+            Reflect.Set(created, "enhanceFromId", parentId);
+            spec.Prefab = prefab;
+            spec.Entity = created;
 
-            Log.Info("무기 #" + WeaponId + " 블루비틀 준비됨 (#" + Reflect.Get(parent ?? body, "id") + " 의 강화 무기)");
+            Log.Info("무기 #" + spec.Id + " '" + spec.Key + "' 준비됨 (#" + parentId + " 의 강화 무기)");
         }
+
+        private static bool describedLook;
 
         private static Sprite BodySprite(Component simple, out object renderer, out object stencil)
         {
@@ -253,12 +307,16 @@ namespace FrostforgedCrescent
         }
 
         // 손에 든 창의 그림을 바꿉니다. 손에 쥐는 위치(기준점)는 기본적으로 기오로이드의 것을 따릅니다.
-        private static void ApplyLook(Component simple, Component lookSimple, string packageRoot)
+        private static void ApplyLook(Component simple, Component lookSimple, string packageRoot, string spriteFile)
         {
             object renderer, stencil, unusedA, unusedB;
             Sprite lance = BodySprite(simple, out renderer, out stencil);
             Sprite source = Reflect.IsNull(lookSimple) ? null : BodySprite(lookSimple, out unusedA, out unusedB);
-            Log.Info("블루비틀 그림: 기오로이드 [" + Describe(lance) + "], 무녀의 예언 [" + Describe(source) + "]");
+            if (!describedLook)
+            {
+                describedLook = true;
+                Log.Info("기사창 그림: 기오로이드 [" + Describe(lance) + "], 무녀의 예언 [" + Describe(source) + "]");
+            }
             if (Reflect.IsNull(renderer) || Reflect.IsNull(lance))
             {
                 Log.Warn("기오로이드의 무기 그림 위치가 예상과 달라 그림을 바꾸지 못했습니다.");
@@ -288,7 +346,7 @@ namespace FrostforgedCrescent
             Vector2 sourcePivot = source.pivot;
             Vector2 grip = pivot ?? new Vector2(sourcePivot.x / sourceRect.width, sourcePivot.y / sourceRect.height);
             // shift: 그림을 창끝 쪽으로 몇 픽셀 밀지(쥐는 위치가 그만큼 물미 쪽으로 갑니다). 전용 그림에만 적용합니다.
-            string customPath = Path.Combine(packageRoot, "Sprites", "lance.png");
+            string customPath = Path.Combine(packageRoot, "Sprites", spriteFile);
             float shift;
             int customHeight = PngHeight(customPath);
             if (!TryNumber(options, "shift", out shift))

@@ -23,7 +23,7 @@ namespace FrostforgedCrescent
 
         private static Type avatarType;
         private static MethodInfo getStat, healPercent, getFormula, getDamage, applyDamage, tempInvulnerable;
-        private static FieldInfo origin, elemental, critChance, critDamageRate, damageResult, damageId, fromType, factionLayers, isDead;
+        private static FieldInfo origin, elemental, critChance, critDamageRate, damageAmount, damageResult, damageId, fromType, factionLayers, isDead;
         private static PropertyInfo maxHp;
         private static bool inExtraDamage;
         private static bool loggedFailure;
@@ -53,6 +53,7 @@ namespace FrostforgedCrescent
             elemental = damage.GetField("elementalType", Reflect.Any);
             critChance = damage.GetField("criticalChancePercent", Reflect.Any);
             critDamageRate = damage.GetField("criticalDamageRate", Reflect.Any);
+            damageAmount = damage.GetField("damage", Reflect.Any);
             damageResult = damage.GetField("damageResult", Reflect.Any);
             damageId = damage.GetField("id", Reflect.Any);
             fromType = damage.GetField("fromType", Reflect.Any);
@@ -117,6 +118,39 @@ namespace FrostforgedCrescent
             return value == 2 || value == 4 || value == 6 || value == 7;
         }
 
+        // 종말기수: 태양검·얼음 무구·먹구름의 피해를 혼돈 피해로 바꾸고, 가장 높은 속성 피해 기준으로 다시 맞춥니다.
+        private static void DoomConvert(object attacker, object damage)
+        {
+            if (damageId == null || damageAmount == null || getFormula == null || !Riders.IsDoomSource(damageId.GetValue(damage) as string))
+                return;
+            int element = Convert.ToInt32(elemental.GetValue(damage));
+            if (element == 4)
+                return; // 이미 혼돈
+            Type stat = Reflect.GameType("ECustomStat");
+            MethodInfo get = attacker.GetType().GetMethod("GetCustomStat", new[] { stat });
+            if (stat == null || get == null)
+                return;
+            Func<string, float> read = name => Convert.ToSingle(get.Invoke(attacker, new[] { Enum.Parse(stat, name) }));
+            float fire = read("FireDamage"), ice = read("IceDamage"), lightning = read("LightningDamage");
+            float own;
+            switch (element)
+            {
+                case 1: own = fire; break;
+                case 2: own = ice; break;
+                case 3: own = lightning; break;
+                case 6: own = Math.Max(ice, lightning); break;
+                case 7: own = Math.Max(fire, ice); break;
+                case 8: own = Math.Max(fire, lightning); break;
+                default: own = 0f; break;
+            }
+            var arguments = new object[] { "HIGHEST", null };
+            float highest = Convert.ToSingle(getFormula.Invoke(attacker, arguments));
+            if (own > 0f && highest > own)
+                damageAmount.SetValue(damage, (float)damageAmount.GetValue(damage) * highest / own);
+            elemental.SetValue(damage, Enum.ToObject(elemental.FieldType, 4)); // Chaos
+            Riders.LogDoom();
+        }
+
         // 피해가 계산되기 전: 얼음 속성 공격의 치명타 확률.
         private static void DamagePrefix(object damage)
         {
@@ -127,11 +161,13 @@ namespace FrostforgedCrescent
                 object attacker = origin.GetValue(damage);
                 if (Reflect.IsNull(attacker) || !avatarType.IsInstanceOfType(attacker))
                     return;
+                if (LanceAddon.KindOf(attacker) == LanceAddon.Doom)
+                    DoomConvert(attacker, damage);
                 if (!IsIce(elemental.GetValue(damage)))
                     return;
                 int bonus = Stat(attacker, ItemContent.IceCrit);
                 int critDamage = 0;
-                if (LanceAddon.IsWielding(attacker)) // 블루비틀 전용 아티팩트
+                if (LanceAddon.IsBlue(attacker)) // 블루비틀 전용 아티팩트
                 {
                     bonus += Stat(attacker, ItemContent.LanceIceCrit);
                     critDamage = Stat(attacker, ItemContent.LanceIceCritDamage);

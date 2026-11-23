@@ -18,6 +18,16 @@ namespace FrostforgedCrescent
         public const int AttackSpeedBonus = 20;
         public const int FrostbitePercent = 20;
 
+        // 무기 종류. 공용 능력(공격 속도, 창격 3·4·5타, 패링·퓨리·돌파)은 모두 같고, 기수마다 고유 효과가 더해집니다.
+        public const int Knight = 0;   // 만변창 : 4기사
+        public const int Blue = 1;     // 서리기수 : 돌격창 블루비틀
+        public const int Flame = 2;    // 화염기수
+        public const int Thunder = 3;  // 뇌격기수
+        public const int Doom = 4;     // 종말기수
+
+        /// <summary>이 무기의 종류. 프리팹을 만들 때 정해집니다.</summary>
+        public int kind;
+
         private static readonly System.Random Dice = new System.Random();
         private static readonly List<object> Wielders = new List<object>();
         private static bool loggedFrostbite, loggedFailure;
@@ -34,13 +44,23 @@ namespace FrostforgedCrescent
                 avatar = Reflect.IsNull(controller) ? null : Reflect.Get(controller, "unitAvatar");
                 if (Reflect.IsNull(avatar))
                     return;
+                // 종류는 프리팹에 적어 두지만, 혹시 값이 넘어오지 않았을 때를 대비해 무기 ID 로도 확인합니다.
+                object entityId = Reflect.Get(parent, "entityId");
+                int byId = entityId is int ? LanceFactory.KindOfId((int)entityId) : -1;
+                if (byId >= 0)
+                    kind = byId;
                 if (!Wielders.Contains(avatar))
                     Wielders.Add(avatar);
                 Addons.RemoveAll(x => Reflect.IsNull(x) || ReferenceEquals(x, this));
                 Addons.Add(this);
                 if (Equals(Reflect.Get(this, "isServer"), true))
+                {
                     statApplied = AddAttackSpeed(AttackSpeedBonus);
-                Log.Info("블루비틀 무기 효과 활성화 (공격 속도 +" + AttackSpeedBonus + "% " + (statApplied ? "적용" : "미적용") + ")");
+                    if (kind == Doom) // 종말기수: 치명타 확률 +20%(능력치는 0.01% 단위), 치명타 피해 +50%
+                        doomApplied = AddStat("Critical", 2000) & AddStat("CriticalDamageBonus", 50);
+                    Riders.OnEquip(avatar, kind);
+                }
+                Log.Info("기사창 무기 효과 활성화 (종류 " + kind + ", 공격 속도 +" + AttackSpeedBonus + "% " + (statApplied ? "적용" : "미적용") + ")");
             }
             catch (Exception e)
             {
@@ -56,7 +76,14 @@ namespace FrostforgedCrescent
                 Wielders.Remove(avatar);
                 Addons.Remove(this);
                 LanceParry.Clear(avatar);
+                Riders.OnUnequip(avatar);
                 SetDashBonus(0);
+                if (doomApplied)
+                {
+                    AddStat("Critical", -2000);
+                    AddStat("CriticalDamageBonus", -50);
+                }
+                doomApplied = false;
                 if (statApplied)
                     AddAttackSpeed(-AttackSpeedBonus);
                 statApplied = false;
@@ -68,6 +95,7 @@ namespace FrostforgedCrescent
         }
 
         // 전용 아티팩트의 '대시 회복 속도': 블루비틀을 들고 있는 동안만 실제 능력치에 반영합니다(서버).
+        private bool doomApplied;
         private int dashApplied;
         private float dashCheck;
 
@@ -81,7 +109,7 @@ namespace FrostforgedCrescent
             dashCheck = 0.25f;
             try
             {
-                SetDashBonus(Math.Max(0, ItemEffects.Stat(avatar, ItemContent.LanceDash)));
+                SetDashBonus(kind == Blue ? Math.Max(0, ItemEffects.Stat(avatar, ItemContent.LanceDash)) : 0);
             }
             catch (Exception)
             {
@@ -122,7 +150,20 @@ namespace FrostforgedCrescent
             return null;
         }
 
+        /// <summary>avatar 가 들고 있는 기사창의 종류(없으면 -1)</summary>
+        public static int KindOf(object avatar)
+        {
+            LanceAddon addon = Addons.Count == 0 ? null : Find(avatar);
+            return addon == null ? -1 : addon.kind;
+        }
+
         /// <summary>avatar 가 지금 블루비틀을 들고 있는가</summary>
+        public static bool IsBlue(object avatar)
+        {
+            return KindOf(avatar) == Blue;
+        }
+
+        /// <summary>avatar 가 지금 기사창(종류 무관)을 들고 있는가</summary>
         public static bool IsWielding(object avatar)
         {
             if (Wielders.Count == 0)
@@ -136,7 +177,10 @@ namespace FrostforgedCrescent
         {
             try
             {
-                if (!IsWielding(attacker) || Equals(Reflect.Get(damage, "ignoreDebuff"), true) || Dice.Next(100) >= FrostbitePercent)
+                int wielded = KindOf(attacker);
+                if (wielded == Thunder)
+                    Riders.ThunderHit(attacker, victim);
+                if (wielded != Blue || Equals(Reflect.Get(damage, "ignoreDebuff"), true) || Dice.Next(100) >= FrostbitePercent)
                     return;
                 object frostbite = Reflect.Call(null, Reflect.GameType("UnitDatabase"), "GetDebuff", "FROSTBITE");
                 if (Reflect.IsNull(frostbite))

@@ -52,7 +52,7 @@ namespace FrostforgedCrescent
             {
                 if (instance == null || Convert.ToString(Reflect.Get(instance, "fromType")) != "DirectAttack")
                     return;
-                if (!LanceAddon.IsWielding(Reflect.Get(__instance, "NetworkAvatar")))
+                if (!LanceAddon.IsBlue(Reflect.Get(__instance, "NetworkAvatar")))
                     return;
                 Stamp last = LastFired.GetOrCreateValue(__instance);
                 long now = DateTime.UtcNow.Ticks;

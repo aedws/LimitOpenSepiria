@@ -34,5 +34,15 @@
   "Keyword_FFC_LanceDash": "Dash recovery speed +{VALUE}",
   "Keyword_FFC_LanceIceCrit": "Critical chance of <tag=Elemental_Ice> attacks +{VALUE}",
   "Keyword_FFC_LanceIceCritDmg": "Critical damage of <tag=Elemental_Ice> attacks +{VALUE}",
-  "Keyword_FFC_LanceOnly": "Frost Rider : Lance Blue Beetle only"
+  "Keyword_FFC_LanceOnly": "Frost Rider : Lance Blue Beetle only",
+  "Weapon_FFC_Knight_Name": "Myriad Lance : Four Horsemen",
+  "WeaponAddon_FFC_Knight_Effect": "Attack speed +20%.\nBasic Attack: Thrust repeats only its 3rd, 4th and 5th hits.\nThe special attack deals no damage and parries for 0.5s as its motion begins. A successful parry grants 3 Fury (up to 9).\nWith Fury, the special attack spends 1 Fury to use [Breakthrough]: dash toward the aim with a thrust, invincible until the dash ends.\n[Breakthrough]: counts as a special attack",
+  "Weapon_FFC_FlameRider_Name": "Flame Rider",
+  "WeaponAddon_FFC_FlameRider_Effect": "Whenever you gain a Sun Sword, also gain 1 Flame Pinion, which ignores the Sun Sword cap.\nFlame Pinions count as Sun Swords (used when Sun Swords run out) and deal 160% of fire damage.\nWith 20 or more Flame Pinions: attack speed +100%, burn stacks +3\nInherits every effect of Myriad Lance : Four Horsemen.",
+  "Weapon_FFC_ThunderRider_Name": "Thunder Rider",
+  "WeaponAddon_FFC_ThunderRider_Effect": "On hit, spends a dark cloud to strike; with no dark cloud, strikes with a 50% weakened one instead.\nEvery enemy hit by the weapon is struck, without limit, and Cloudseed Arrowhead's chance also stacks as a damage multiplier.\nInherits every effect of Myriad Lance : Four Horsemen.",
+  "Weapon_FFC_DoomRider_Name": "Doom Rider",
+  "WeaponAddon_FFC_DoomRider_Effect": "Critical chance +20%, critical damage +50%\nDamage from Sun Swords, ice armaments and dark clouds becomes chaos damage and follows your highest elemental damage.\nInherits every effect of Myriad Lance : Four Horsemen.",
+  "EffectHUD_FFC_Feather_Name": "Flame Pinion",
+  "EffectHUD_FFC_Feather_FlavorText": "Counts as a Sun Sword and is used when Sun Swords run out. At 20 or more: attack speed +100%, burn stacks +3."
 }
