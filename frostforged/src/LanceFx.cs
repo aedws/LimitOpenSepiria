@@ -28,7 +28,11 @@ namespace FrostforgedCrescent
             new[] { new Color32(255, 247, 170, 255), new Color32(190, 150, 255, 255) }, // 뇌격기수: 번개빛
             // 종말기수: 우주 속성. 굵은 몸통까지 물들입니다(세 번째 색) — 몸통은 옅은 별빛, 줄기는 보라, 가는 줄기는 짙은 보라.
             new[] { new Color32(168, 133, 255, 255), new Color32(104, 64, 200, 255), new Color32(226, 212, 255, 255) },
+            // 흑요도 : 참월 II형: 검은 궤적. 몸통은 칠흑, 줄기는 보라, 가는 줄기는 옅은 별빛.
+            new[] { new Color32(120, 84, 214, 255), new Color32(214, 196, 255, 255), new Color32(20, 14, 34, 255) },
         };
+        /// <summary>흑요도의 궤적 색 번호(기수 번호 뒤에 이어 붙였습니다)</summary>
+        public const int ObsidianPalette = 5;
         private static int painting; // 지금 만들고 있는 프레임의 종류
 
         private static bool HasPalette(int kind)
@@ -38,8 +42,8 @@ namespace FrostforgedCrescent
         private const int CoreDepth = 4;   // 가장자리에서 이만큼 들어간 곳이 근처에 있으면 '굵은 몸통'
         private const int CoreReach = 3;
 
-        private static readonly Dictionary<Sprite, Sprite>[] Frames = Enumerable.Range(0, 5).Select(_ => new Dictionary<Sprite, Sprite>()).ToArray();
-        private static readonly HashSet<object>[] PreparedSets = Enumerable.Range(0, 5).Select(_ => new HashSet<object>()).ToArray();
+        private static readonly Dictionary<Sprite, Sprite>[] Frames = Enumerable.Range(0, 6).Select(_ => new Dictionary<Sprite, Sprite>()).ToArray();
+        private static readonly HashSet<object>[] PreparedSets = Enumerable.Range(0, 6).Select(_ => new HashSet<object>()).ToArray();
         private static readonly Dictionary<object, int> Active = new Dictionary<object, int>(); // 지금 전용 프레임으로 그릴 애니메이터 → 종류
         private static int capturedKind;
 
@@ -130,7 +134,7 @@ namespace FrostforgedCrescent
             __state = false;
             try
             {
-                capturedKind = LanceAddon.KindOf(owner);
+                capturedKind = CrescentAddon.KindOf(owner) == CrescentAddon.Obsidian ? ObsidianPalette : LanceAddon.KindOf(owner);
                 __state = HasPalette(capturedKind) && Convert.ToString(Reflect.Get(__instance, "fromType")) == "DirectAttack";
             }
             catch (Exception)

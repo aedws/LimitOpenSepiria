@@ -5,14 +5,45 @@ using UnityEngine;
 namespace FrostforgedCrescent
 {
     /// <summary>
-    /// '서리단조 칼날 : 초승달 식'에 붙는 무기 효과.
-    /// 이 컴포넌트가 붙어 있는 무기를 들고 있는지로 검집 발동 규칙을 바꿀지 판단합니다(ScabbardPatch).
+    /// 이 모드의 카타나 세 자루에 붙는 무기 효과.
+    /// 공용(세 자루 모두): 첫 번째 베기 고정, 모든 공격이 마지막 공격 판정, 특수 공격 = 납도, 납도 중 이동 속도 증가.
+    /// 서리단조 칼날 : 초승달 식 — 축사의 검집·볼루스파 연동(ScabbardPatch, CharmLink).
+    /// 흑요도 : 참월 II형 — 무기 공격이 우주 속성, 공격이 적중할 때마다 보유한 참월 흑·백이 발동(Cosmic).
     /// 효과 설명 문구도 이 컴포넌트의 effectText 로 표시됩니다.
     /// </summary>
     public class CrescentAddon : WeaponAddon
     {
         /// <summary>납도 상태에서의 이동 속도 증가량(배율에 더해집니다). 0.6 = 60%.</summary>
         public const float SheathMoveSpeedBonus = 0.6f;
+
+        // 무기 종류
+        public const int Base = 0;      // 만변도 : 초승 (2단계)
+        public const int Frost = 1;     // 서리단조 칼날 : 초승달 식
+        public const int Obsidian = 2;  // 흑요도 : 참월 II형
+
+        /// <summary>이 무기의 종류. 프리팹을 만들 때 정해집니다.</summary>
+        public int kind;
+
+        private static readonly System.Collections.Generic.List<CrescentAddon> Active = new System.Collections.Generic.List<CrescentAddon>();
+        private bool cosmicApplied;
+
+        /// <summary>avatar 가 들고 있는 이 모드 카타나의 종류(없으면 -1)</summary>
+        public static int KindOf(object avatar)
+        {
+            if (Active.Count == 0 || Reflect.IsNull(avatar))
+                return -1;
+            foreach (CrescentAddon addon in Active)
+                if (!Reflect.IsNull(addon) && ReferenceEquals(addon.avatar, avatar))
+                    return addon.kind;
+            return -1;
+        }
+
+        /// <summary>이 무기 조작부가 들고 있는 무기가 서리단조 칼날인가(검집 연동용)</summary>
+        public static bool IsFrost(Component weapon)
+        {
+            var addon = Reflect.IsNull(weapon) ? null : weapon.GetComponent(typeof(CrescentAddon)) as CrescentAddon;
+            return addon != null && addon.kind == Frost;
+        }
 
         private Action<int> specialHandler;
         private HipScabbard hip;
@@ -38,8 +69,20 @@ namespace FrostforgedCrescent
                 if (Reflect.IsNull(controller))
                     return;
                 avatar = Reflect.Get(controller, "unitAvatar");
-                hip = HipScabbard.Create(controller as Component, parent as Component);
-                aura = new SheathAura(avatar);
+                // 종류는 프리팹에 적어 두지만, 혹시 값이 넘어오지 않았을 때를 대비해 무기 ID 로도 확인합니다.
+                object entityId = Reflect.Get(parent, "entityId");
+                int byId = entityId is int ? WeaponFactory.KindOfId((int)entityId) : -1;
+                if (byId >= 0)
+                    kind = byId;
+                Active.RemoveAll(x => Reflect.IsNull(x) || ReferenceEquals(x, this));
+                Active.Add(this);
+                hip = HipScabbard.Create(controller as Component, parent as Component, WeaponFactory.ScabbardFile(kind));
+                aura = new SheathAura(avatar, kind == Obsidian ? new Color(0.72f, 0.56f, 1f, 0.9f) : kind == Frost ? new Color(0.45f, 0.85f, 1f, 0.9f) : new Color(0.9f, 0.92f, 1f, 0.8f));
+                if (kind == Obsidian && IsServer && !cosmicApplied && !Reflect.IsNull(avatar))
+                {
+                    Reflect.Call(avatar, null, "AddCustomStatUnsafe", ItemContent.Cosmic, LanceAddon.CosmicBase); // 우주 속성 피해
+                    cosmicApplied = true;
+                }
                 // 납도 공격 간격이 공격 속도를 따르게 합니다(게임의 '납도 공격 속도' 능력치를 켭니다).
                 if (IsServer && !sheathSpeedApplied && !Reflect.IsNull(avatar))
                 {
@@ -67,6 +110,10 @@ namespace FrostforgedCrescent
             try
             {
                 SetSpeedBonus(false);
+                Active.Remove(this);
+                if (cosmicApplied && !Reflect.IsNull(avatar))
+                    Reflect.Call(avatar, null, "AddCustomStatUnsafe", ItemContent.Cosmic, -LanceAddon.CosmicBase);
+                cosmicApplied = false;
                 if (sheathSpeedApplied && !Reflect.IsNull(avatar))
                     Reflect.Call(avatar, null, "AddCustomStatUnsafe", SheathSpeedStat, -1);
                 sheathSpeedApplied = false;
@@ -160,9 +207,9 @@ namespace FrostforgedCrescent
         // 납도 상태에서 나간 공격(게임에서는 특수 공격으로 처리됩니다).
         private void OnSpecialSwing(int index)
         {
-            if (!IsServer || !Equals(Reflect.Get(parent, "sheathStateEnabled"), true))
+            if (!IsServer || kind != Frost || !Equals(Reflect.Get(parent, "sheathStateEnabled"), true))
                 return;
-            CharmLink.OnSheathAttack(avatar);
+            CharmLink.OnSheathAttack(avatar); // 서리단조만: 검집·볼루스파 연동
         }
 
         private void OnBeginAttack(int fireId)

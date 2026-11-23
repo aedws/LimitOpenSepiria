@@ -133,7 +133,7 @@ namespace FrostforgedCrescent
                 return false;
             elemental.SetValue(damage, Enum.ToObject(elemental.FieldType, 5)); // Normal
             Reflect.Call(damage, null, "SetCustomColor", false, CosmicColor);
-            LogOnce(7, "종말기수 확인: 무기 공격을 우주 속성 피해로 처리");
+            LogOnce(7, "우주 속성 무기 확인: 무기 공격을 우주 속성 피해로 처리");
             return true;
         }
 
@@ -149,7 +149,7 @@ namespace FrostforgedCrescent
                 elemental.SetValue(damage, Enum.ToObject(elemental.FieldType, 5)); // Normal
                 Reflect.Call(damage, null, "SetCustomColor", false, CosmicColor);
             }
-            else if (LanceAddon.KindOf(attacker) == LanceAddon.Doom)
+            else if (Cosmic.IsCosmicWielder(attacker))
             {
                 cosmic = MarkCosmic(damage);
             }
@@ -209,7 +209,7 @@ namespace FrostforgedCrescent
                 string id = damageId == null ? null : damageId.GetValue(damage) as string;
                 bool direct = fromType != null && Convert.ToInt32(fromType.GetValue(damage)) == 1;
                 bool cosmic = (Cosmic.IsCosmic(id) && !Cosmic.IsDebuff(id))
-                              || (direct && id != null && id.StartsWith("Weapon_") && LanceAddon.KindOf(attacker) == LanceAddon.Doom);
+                              || (direct && id != null && id.StartsWith("Weapon_") && Cosmic.IsCosmicWielder(attacker));
                 Cosmic.Track(attacker);
                 if (direct)
                     Cosmic.OnWeaponHit(attacker, __instance);
@@ -330,9 +330,9 @@ namespace FrostforgedCrescent
             {
                 if (Reflect.IsNull(owner) || getStat == null)
                     return;
-                if (LanceAddon.KindOf(owner) == LanceAddon.Doom)
+                if (Cosmic.IsCosmicWielder(owner))
                 {
-                    // 종말기수: 무기 공격은 우주 속성 피해 수치만으로 계산합니다.
+                    // 종말기수·흑요도: 무기 공격은 우주 속성 피해 수치만으로 계산합니다.
                     __result = Math.Max(1, Stat(owner, ItemContent.Cosmic));
                     result = EDamageElementalType.Normal;
                     return;

@@ -16,7 +16,7 @@ namespace FrostforgedCrescent
     {
         private const float IdleSeconds = 0.3f; // 이만큼 공격이 없어야 '쉬는 자리'로 봅니다
 
-        private static object sprite;
+        private static readonly System.Collections.Generic.Dictionary<string, object> Sprites = new System.Collections.Generic.Dictionary<string, object>();
 
         private GameObject holder;
         private Transform anchor;     // 캐릭터(무기 조작부)
@@ -26,7 +26,7 @@ namespace FrostforgedCrescent
         private int side;             // -1 또는 +1 (캐릭터 기준 좌우)
         private int idleSince = Environment.TickCount;
 
-        public static HipScabbard Create(Component controller, Component weapon)
+        public static HipScabbard Create(Component controller, Component weapon, string file)
         {
             try
             {
@@ -35,8 +35,9 @@ namespace FrostforgedCrescent
                 var body = Reflect.Get(Reflect.Get(weapon, "mainWeaponBody"), "weaponSpriteRenderer") as Component;
                 if (Reflect.IsNull(body))
                     return null;
-                if (Reflect.IsNull(sprite))
-                    sprite = SpriteLoader.Load(Path.Combine(Entry.packageRoot, "Sprites", "scabbard.png"), null, "칼집 그림");
+                object sprite;
+                if (!Sprites.TryGetValue(file, out sprite) || Reflect.IsNull(sprite))
+                    Sprites[file] = sprite = SpriteLoader.Load(Path.Combine(Entry.packageRoot, "Sprites", file), null, "칼집 그림");
                 if (Reflect.IsNull(sprite))
                     return null;
                 Type rendererType = typeof(Component).Assembly.GetType("UnityEngine.SpriteRenderer");

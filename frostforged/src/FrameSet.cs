@@ -20,7 +20,7 @@ namespace FrostforgedCrescent
         /// <summary>진화 전 무기의 칼 그림. 새 그림들의 크기·기준점 기준입니다.</summary>
         public static object Reference;
 
-        public static void Apply(Component weapon, string packageRoot)
+        public static void Apply(Component weapon, string packageRoot, string drawnFile, string sheathedFile)
         {
             object animator = Reflect.Get(weapon, "katanaAnimator");
             var original = Reflect.IsNull(animator) ? null : Reflect.Get(animator, "currentSet") as UnityEngine.Object;
@@ -51,8 +51,8 @@ namespace FrostforgedCrescent
                 reference = FirstSprite(idle);
 
             Reference = reference;
-            object drawn = SpriteLoader.Load(Path.Combine(packageRoot, "Sprites", "katana.png"), reference, "칼 그림");
-            object sheathed = SpriteLoader.Load(Path.Combine(packageRoot, "Sprites", "katana_sheathed.png"), reference, "납도 그림");
+            object drawn = SpriteLoader.Load(Path.Combine(packageRoot, "Sprites", drawnFile), reference, "칼 그림");
+            object sheathed = SpriteLoader.Load(Path.Combine(packageRoot, "Sprites", sheathedFile), reference, "납도 그림");
             if (drawn == null)
                 return;
 

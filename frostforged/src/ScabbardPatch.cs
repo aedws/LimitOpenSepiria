@@ -87,7 +87,7 @@ namespace FrostforgedCrescent
             if (Reflect.IsNull(controller))
                 return false;
             var weapon = Reflect.Get(controller, "currentWeapon") as Component;
-            return !Reflect.IsNull(weapon) && !Reflect.IsNull(weapon.GetComponent(typeof(CrescentAddon)));
+            return CrescentAddon.IsFrost(weapon); // 검집 연동은 서리단조 칼날만
         }
     }
 }

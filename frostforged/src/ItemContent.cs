@@ -337,8 +337,7 @@ namespace FrostforgedCrescent
                 {
                     Stat.Exact("FFC_TAEGEUK_DAMAGE", false, 5, 10, 20, 30),
                     Stat.Exact("FFC_TAEGEUK_EXTRA", true, 0, 1, 1, 2),
-                    Stat.Exact("FFC_TAEGEUK_CHAIN", true, 0, 0, 0, 1),
-                }
+                                    }
             },
             new Item
             {

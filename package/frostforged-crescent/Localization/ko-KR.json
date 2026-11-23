@@ -108,5 +108,9 @@
   "Item_FFC_Dharani_FlavorText": "세상이 나를 속이려 들 지언정, 내가 세상을 속이지 않으리라.",
   "Item_FFC_TaegeukGate_Name": "태극문 : '조화'",
   "Item_FFC_TaegeukGate_FlavorText": "이것은 나만의 무구정광대다라니.",
-  "EffectHUD_FFC_Taegeuk_FlavorText": "5초마다 충전되는 태극 아티팩트. 가림막이 걷히면 충전이 끝난 것입니다."
+  "EffectHUD_FFC_Taegeuk_FlavorText": "5초마다 충전되는 태극 아티팩트. 가림막이 걷히면 충전이 끝난 것입니다.",
+  "Weapon_FFC_KatanaBase_Name": "만변도 : 초승",
+  "WeaponAddon_FFC_KatanaBase_Effect": "기본 공격이 첫 번째 베기로 고정됩니다. 기본 공격과 납도 공격은 모두 마지막 공격으로 판정됩니다.\n특수 공격이 납도로 바뀝니다. 납도 상태에서는 몸에 빛이 감돌며 이동 속도가 60% 증가하고, 납도 공격의 속도가 공격 속도를 따릅니다.",
+  "Weapon_FFC_Obsidian_Name": "흑요도 : 참월 II형",
+  "WeaponAddon_FFC_Obsidian_Effect": "무기 공격이 [우주 속성] 피해로 바뀝니다. 우주 속성 피해는 다른 속성 피해와 관계없이 우주 속성 피해 수치만으로 계산됩니다.\n우주 속성 피해 +10\n공격이 적중할 때마다 보유한 참월 '흑', 참월 '백'이 충전 시간과 관계없이 발동합니다.\n만변도 : 초승의 모든 효과를 계승합니다."
 }

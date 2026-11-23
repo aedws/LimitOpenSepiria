@@ -11,7 +11,7 @@ namespace FrostforgedCrescent
     /// </summary>
     internal sealed class SheathAura
     {
-        private static readonly Color Tint = new Color(0.45f, 0.85f, 1f, 0.9f);
+        private readonly Color tint;
 
         private readonly object avatar;
         private GameObject instance;
@@ -20,9 +20,10 @@ namespace FrostforgedCrescent
         private object bodyRenderer;
         private bool failed;
 
-        public SheathAura(object avatar)
+        public SheathAura(object avatar, Color tint)
         {
             this.avatar = avatar;
+            this.tint = tint;
         }
 
         public void Set(bool on)
@@ -39,7 +40,7 @@ namespace FrostforgedCrescent
                 if (on && !Reflect.IsNull(renderer))
                 {
                     // 피격 번쩍임 등으로 색이 덮여도 다시 하늘색으로.
-                    Reflect.Set(renderer, "color", Tint);
+                    Reflect.Set(renderer, "color", tint);
                     if (followers == null && !Reflect.IsNull(bodyRenderer))
                         Reflect.Set(renderer, "sprite", Reflect.Get(bodyRenderer, "sprite"));
                 }

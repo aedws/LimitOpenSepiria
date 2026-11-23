@@ -63,11 +63,17 @@ namespace FrostforgedCrescent
         private static float now;
         private static GameObject ticker;
         private static PropertyInfo serverActive;
-        private static bool loggedFailure, firingChain;
+        private static bool loggedFailure;
 
         public static bool IsCosmic(string id) { return id != null && id.StartsWith(IdPrefix); }
         public static bool IsDebuff(string id) { return id != null && id.StartsWith(DebuffPrefix); }
         public static bool IsTaegeuk(string id) { return id != null && id.StartsWith(TaegeukPrefix); }
+
+        /// <summary>avatar 가 무기 공격이 우주 속성인 무기(종말기수, 흑요도 : 참월 II형)를 들고 있는가</summary>
+        public static bool IsCosmicWielder(object avatar)
+        {
+            return LanceAddon.KindOf(avatar) == LanceAddon.Doom || CrescentAddon.KindOf(avatar) == CrescentAddon.Obsidian;
+        }
 
         public static void Apply(Harmony harmony)
         {
@@ -326,6 +332,18 @@ namespace FrostforgedCrescent
                 Charges charges;
                 if (!Players.TryGetValue(attacker, out charges))
                     return;
+                // 흑요도 : 참월 II형 — 공격이 적중할 때마다 보유한 참월 흑·백이 충전과 관계없이 발동(한 번 휘두를 때 한 번)
+                if (CrescentAddon.KindOf(attacker) == CrescentAddon.Obsidian)
+                {
+                    charges.BasicPending = false;
+                    if (now - charges.LastCall >= 0.15f)
+                    {
+                        charges.LastCall = now;
+                        for (int i = 0; i < 2; i++)
+                            if (Stat(attacker, PowerStats[i]) > 0)
+                                Fire(attacker, charges, i, victim, false);
+                    }
+                }
                 // 참월 — 일반 공격에 처음 맞은 적을 중심축으로, 충전된 참월이 발동
                 if (charges.BasicPending)
                 {
@@ -492,26 +510,6 @@ namespace FrostforgedCrescent
             }
             Once(3, "우주 속성 확인: 태극 발동 (" + new[] { "참월 흑", "참월 백", "섬멸 청", "명멸 적" }[kind] + ", " + repeats + "회)");
 
-            // 무구정광대다라니경(3레벨): 하나가 발동하면 나머지도 충전과 관계없이 차례로 발동합니다.
-            if (natural && !firingChain && Stat(avatar, ItemContent.TaegeukChain) > 0)
-            {
-                firingChain = true;
-                try
-                {
-                    int order = 1;
-                    for (int i = 0; i < 4; i++)
-                    {
-                        if (i == kind || Stat(avatar, PowerStats[i]) <= 0)
-                            continue;
-                        int next = i;
-                        Later(0.2f * order++, () => { if (!Dead(avatar)) Fire(avatar, charges, next, null, false); });
-                    }
-                }
-                finally
-                {
-                    firingChain = false;
-                }
-            }
         }
 
         /// <summary>태극 아티팩트의 기본 피해량(태극 피해량 증가·나침반 증폭 전). kind 가 범위를 벗어나면 0.</summary>

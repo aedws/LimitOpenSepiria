@@ -108,5 +108,9 @@
   "Item_FFC_Dharani_FlavorText": "Though the world may deceive me, I shall not deceive the world.",
   "Item_FFC_TaegeukGate_Name": "Taegeuk Gate : 'Harmony'",
   "Item_FFC_TaegeukGate_FlavorText": "This is my own Pure Light Dharani.",
-  "EffectHUD_FFC_Taegeuk_FlavorText": "A Taegeuk artifact that charges every 5s. It is ready when the shade is gone."
+  "EffectHUD_FFC_Taegeuk_FlavorText": "A Taegeuk artifact that charges every 5s. It is ready when the shade is gone.",
+  "Weapon_FFC_KatanaBase_Name": "Myriad Blade : Crescent",
+  "WeaponAddon_FFC_KatanaBase_Effect": "Basic attacks are locked to the first slash. Basic and sheathed attacks all count as the final attack.\nThe special attack becomes Sheathe. While sheathed, a glow surrounds you, move speed is +60%, and sheathed attack speed follows attack speed.",
+  "Weapon_FFC_Obsidian_Name": "Obsidian Blade : Chamwol Type II",
+  "WeaponAddon_FFC_Obsidian_Effect": "Weapon attacks deal [Cosmic] damage, calculated only from your Cosmic damage and independent of other elements.\nCosmic damage +10\nEvery hit calls your Chamwol 'Black' and Chamwol 'White' regardless of charge.\nInherits every effect of Myriad Blade : Crescent."
 }
