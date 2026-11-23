@@ -79,6 +79,30 @@ public class PlayerAvatar
 {
 }
 
+public class UnitAvatar
+{
+}
+
+// 발동형 아티팩트(나침반이 인식하는 아티팩트)의 표식. 실제 게임과 같은 모양입니다.
+public interface IAttackableCharm
+{
+    bool IsAttackableCharm()
+    {
+        return true;
+    }
+
+    float GetDamage(UnitAvatar avatar);
+}
+
+// 실제 게임에서는 Mirror.NetworkBehaviour 를 상속합니다. 스텁은 상속 관계만 둡니다.
+public class Charm_Basic : UnityEngine.MonoBehaviour
+{
+}
+
+public class Charm_StatusInstance : Charm_Basic
+{
+}
+
 public static class HorayModAPI
 {
     public static event Action<PlayerAvatar> OnPlayerAvatarSpawnedServerside { add { } remove { } }

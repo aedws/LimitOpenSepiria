@@ -128,6 +128,7 @@ namespace FrostforgedCrescent
             public bool Bond;
             public int Rarity = 3;        // 0 일반, 1 고급, 2 희귀, 3 전설
             public bool Unique = true;    // [고유]
+            public bool Attackable;       // 발동형 아티팩트(나침반이 인식)
             public string[] Categories;
             public Stat[] Stats;
             public GameObject Prefab;
@@ -297,7 +298,7 @@ namespace FrostforgedCrescent
             },
             new Item
             {
-                Id = 9101431, Name = "ChamwolBlack", Rarity = 1, Categories = new[] { TaegeukCategory },
+                Id = 9101431, Name = "ChamwolBlack", Attackable = true, Rarity = 1, Categories = new[] { TaegeukCategory },
                 Stats = new[]
                 {
                     Stat.Exact("FFC_SLASH_BLACK", false, 100, 200, 350, 500),
@@ -305,7 +306,7 @@ namespace FrostforgedCrescent
             },
             new Item
             {
-                Id = 9101432, Name = "ChamwolWhite", Rarity = 1, Categories = new[] { TaegeukCategory },
+                Id = 9101432, Name = "ChamwolWhite", Attackable = true, Rarity = 1, Categories = new[] { TaegeukCategory },
                 Stats = new[]
                 {
                     Stat.Exact("FFC_SLASH_WHITE", false, 100, 200, 350, 500),
@@ -313,7 +314,7 @@ namespace FrostforgedCrescent
             },
             new Item
             {
-                Id = 9101433, Name = "AnnihilationBlue", Rarity = 2, Categories = new[] { TaegeukCategory },
+                Id = 9101433, Name = "AnnihilationBlue", Attackable = true, Rarity = 2, Categories = new[] { TaegeukCategory },
                 Stats = new[]
                 {
                     Stat.Exact("FFC_SPEAR_BLUE", false, 100, 200, 300, 400, 500, 300),
@@ -322,7 +323,7 @@ namespace FrostforgedCrescent
             },
             new Item
             {
-                Id = 9101434, Name = "FlickerRed", Rarity = 2, Categories = new[] { TaegeukCategory },
+                Id = 9101434, Name = "FlickerRed", Attackable = true, Rarity = 2, Categories = new[] { TaegeukCategory },
                 Stats = new[]
                 {
                     Stat.Exact("FFC_SPEAR_RED", false, 100, 200, 300, 400, 500, 300),
@@ -477,7 +478,7 @@ namespace FrostforgedCrescent
 
             // 프리팹: 게임의 '능력치 아티팩트' 하나.
             GameObject prefab = HorayModAPI.CreateNetworkPrefab("Charm-FFC_" + item.Name);
-            Component charm = prefab.AddComponent(charmType);
+            Component charm = prefab.AddComponent(item.Attackable ? typeof(TaegeukCharm) : charmType);
             Array groups = Array.CreateInstance(groupType, item.Stats.Length);
             for (int i = 0; i < item.Stats.Length; i++)
             {

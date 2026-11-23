@@ -514,10 +514,76 @@ namespace FrostforgedCrescent
             }
         }
 
+        /// <summary>태극 아티팩트의 기본 피해량(태극 피해량 증가·나침반 증폭 전). kind 가 범위를 벗어나면 0.</summary>
+        public static float BaseAmount(object avatar, int kind)
+        {
+            if (kind < 0 || kind >= PowerStats.Length || Reflect.IsNull(avatar))
+                return 0f;
+            return FlatDamage + Power(avatar, Stat(avatar, PowerStats[kind]));
+        }
+
+        private static readonly string[] PowerStatusIds = { "FFC_SLASH_BLACK", "FFC_SLASH_WHITE", "FFC_SPEAR_BLUE", "FFC_SPEAR_RED" };
+
+        /// <summary>이 아티팩트가 태극의 어느 것인지(0 참월 흑, 1 참월 백, 2 섬멸 청, 3 명멸 적, 아니면 -1)</summary>
+        public static int KindOfCharm(object charm)
+        {
+            var groups = Reflect.Get(charm, "stats") as IEnumerable;
+            if (groups == null)
+                return -1;
+            foreach (object group in groups)
+            {
+                int kind = Array.IndexOf(PowerStatusIds, Convert.ToString(Reflect.Get(group, "statusID")));
+                if (kind >= 0)
+                    return kind;
+            }
+            return -1;
+        }
+
+        private sealed class CompassCache { public long Ticks; public readonly int[] Bonus = new int[4]; }
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, CompassCache> Compass
+            = new System.Runtime.CompilerServices.ConditionalWeakTable<object, CompassCache>();
+
+        // 나침반이 이 캐릭터의 태극 아티팩트에 주는 피해 증폭(%). 찾는 비용이 있어 1초 동안은 같은 값을 씁니다.
+        private static int CompassBonus(object avatar, int kind)
+        {
+            CompassCache cache = Compass.GetOrCreateValue(avatar);
+            long ticks = DateTime.UtcNow.Ticks;
+            if (cache.Ticks != 0 && ticks - cache.Ticks < TimeSpan.TicksPerSecond)
+                return cache.Bonus[kind];
+            cache.Ticks = ticks;
+            Array.Clear(cache.Bonus, 0, 4);
+            try
+            {
+                MethodInfo find = typeof(UnityEngine.Object).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .FirstOrDefault(m => m.Name == "FindObjectsOfType" && !m.IsGenericMethod && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(Type));
+                if (find != null)
+                    foreach (object charm in (IEnumerable)find.Invoke(null, new object[] { typeof(TaegeukCharm) }))
+                    {
+                        if (Reflect.IsNull(charm) || !ReferenceEquals(Reflect.Get(charm, "NetworkAvatar"), avatar) || !Equals(Reflect.Get(charm, "IsEffectEnabled"), true))
+                            continue;
+                        int which = KindOfCharm(charm);
+                        if (which < 0)
+                            continue;
+                        int bonus = Convert.ToInt32(Reflect.Call(charm, null, "RequestCharmDamageBonusOnRoot"));
+                        if (bonus > cache.Bonus[which])
+                            cache.Bonus[which] = bonus;
+                    }
+            }
+            catch (Exception e)
+            {
+                Fail("나침반 증폭", e);
+            }
+            return cache.Bonus[kind];
+        }
+
         private static float TaegeukAmount(object avatar, int kind)
         {
-            float amount = FlatDamage + Power(avatar, Stat(avatar, PowerStats[kind]));
-            return amount * (1f + Math.Max(0, Stat(avatar, ItemContent.TaegeukDamage)) / 100f);
+            float amount = BaseAmount(avatar, kind);
+            amount *= 1f + Math.Max(0, Stat(avatar, ItemContent.TaegeukDamage)) / 100f;
+            int compass = CompassBonus(avatar, kind);
+            if (compass != 0)
+                Once(4, "우주 속성 확인: 나침반의 피해 증폭 +" + compass + "% 적용");
+            return amount * (1f + compass / 100f);
         }
 
         private static void Activate(object avatar, int kind, object target, Vector3 center)
