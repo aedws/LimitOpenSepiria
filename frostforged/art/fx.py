@@ -5,21 +5,30 @@ import random, sys
 out=sys.argv[1]
 W=(255,255,255,255); G=(214,220,236,255)
 
-# 참월: 화면을 가르는 직선 하나. 처음엔 한 줄 굵기(테-심-테, 3픽셀)로 그어지고, 곧 심이 위아래로 퍼져
-# 세 줄 굵기(9픽셀)의 굵은 한 줄이 됩니다. 이어서 다시 가늘어지고 점선으로 끊기며 사라집니다.
-# core 는 심, rim 은 테, fade 는 사라질 때의 색입니다.
+# 참월: 화면을 가르는 직선 하나. 참고한 연출대로 '가는 선 → 굵은 선 → 가는 선' 순서입니다.
+#   0~1   가는 선(1픽셀, 밝은 색)이 먼저 그어짐
+#   2     굵어지는 중간 단계
+#   3~6   굵은 선(테-심-테, 9픽셀): 파열이 이어지는 동안
+#   7     가늘어지는 중간 단계
+#   8~9   다시 가는 선
+#   10~11 점선으로 끊기며 사라짐
+# core 는 굵은 선의 심, rim 은 테, fade 는 가는 선·점선의 색입니다.
 def cut(name,core,rim,fade):
     fw,fh,n=96,16,12; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2
-    half=(0,1,2,3,3,3,3,2,1)                      # 심의 반 굵기: 0(1픽셀) → 3(7픽셀). 테 1픽셀씩을 더하면 3 → 9픽셀
+    half={2:1,3:3,4:3,5:3,6:3,7:1}                 # 굵은 구간에서 심의 반 굵기
     for f in range(n):
         for x in range(fw):
             X=f*fw+x
-            if f<len(half):
-                h=half[f]; a=255 if f<7 else (220,170)[f-7]
-                for y in range(cy-h,cy+h+1): px[X,y]=core[:3]+(a,)
-                px[X,cy-h-1]=rim[:3]+(a,); px[X,cy+h+1]=rim[:3]+(a,)
-            else:                                  # 가는 점선으로 끊기며 사라짐
-                period=(6,9,12)[f-9]; on=(4,4,3)[f-9]; a=(120,80,45)[f-9]
+            if f in half:
+                h=half[f]
+                for y in range(cy-h,cy+h+1): px[X,y]=core
+                px[X,cy-h-1]=rim; px[X,cy+h+1]=rim
+            elif f<2:
+                px[X,cy]=fade[:3]+((230,255)[f],)
+            elif f<10:
+                px[X,cy]=fade[:3]+((230,180)[f-8],)
+            else:
+                period=(7,11)[f-10]; on=(4,3)[f-10]; a=(110,55)[f-10]
                 if x%period<on: px[X,cy]=fade[:3]+(a,)
     sheet.save(out+name+'.png')
 

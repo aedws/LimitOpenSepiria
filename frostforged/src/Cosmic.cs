@@ -542,7 +542,7 @@ namespace FrostforgedCrescent
         // 잠깐 뒤 그 선을 따라 공간이 갈라집니다: 타마다 흰 바늘이 엇갈려 번쩍이며 선 주변의 적 모두에게 피해가 들어가고,
         // 선은 가는 점선으로 끊기며 사라집니다. 흑은 가로(검은 심 + 흰 테), 백은 세로(흰 심 + 푸른 테).
         private static readonly float[] NeedleTilt = { -14f, 14f, 0f };
-        private const float CutThickness = 1f; // 가로·세로 선의 굵기 배율(그림에서 선이 한 줄 굵기에서 세 줄 굵기로 굵어집니다)
+        private const float CutThickness = 1f; // 가로·세로 선의 굵기 배율(그림에서 가는 선 → 굵은 선 → 가는 선으로 바뀝니다)
 
         private static void Slash(object avatar, bool vertical, Vector3 center)
         {
