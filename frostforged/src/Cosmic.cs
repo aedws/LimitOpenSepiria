@@ -496,18 +496,26 @@ namespace FrostforgedCrescent
             }
         }
 
-        // 참월(콤보 데스폴트를 본뜸): 중심축을 지나는 선이 화면 끝에서 끝까지 즉시 그어지고,
-        // 잠깐 뒤 그 선을 따라 공간이 갈라지며 선 주변의 적 모두에게 여러 번 피해가 들어갑니다. 흑은 가로, 백은 세로.
+        // 참월(콤보 데스폴트를 본뜸): 중심축을 지나는 면도날 같은 선이 화면 끝에서 끝까지 즉시 그어지고(충격 고리와 함께),
+        // 잠깐 뒤 그 선을 따라 공간이 갈라집니다: 타마다 흰 바늘이 엇갈려 번쩍이며 선 주변의 적 모두에게 피해가 들어가고,
+        // 선은 가는 점선으로 끊기며 사라집니다. 흑은 가로(검은 심 + 흰 테), 백은 세로(흰 심 + 푸른 테).
+        private static readonly float[] NeedleTilt = { -14f, 14f, 0f };
+
         private static void Slash(object avatar, bool vertical, Vector3 center)
         {
             float amount = TaegeukAmount(avatar, vertical ? 1 : 0) / SlashHits;
             string id = TaegeukPrefix + (vertical ? "SlashWhite" : "SlashBlack");
+            float angle = vertical ? 90f : 0f;
+            var middle = new Vector3(center.x, center.y + 0.5f, center.z);
+            const float stretch = 7f; // 그림은 가로 6칸: 화면을 가로지르도록 늘입니다(굵기는 그대로 가늘게)
             for (int hit = 0; hit < SlashHits; hit++)
             {
+                float tilt = NeedleTilt[hit % NeedleTilt.Length];
                 Later(SlashDelay + SlashInterval * hit, () =>
                 {
                     if (Dead(avatar))
                         return;
+                    CosmicFx.Spawn("needle", middle, angle + tilt, stretch, 1.5f, White, 25f, false, -1f);
                     foreach (object creature in Hostiles(avatar).ToList())
                     {
                         Vector3 p = Position(creature);
@@ -518,12 +526,10 @@ namespace FrostforgedCrescent
                     }
                 });
             }
-            // 그림은 가로 6칸짜리 한 줄(첫 프레임이 가는 선). 화면을 가로지르도록 늘이고, 선을 SlashDelay 동안 붙잡았다가 터뜨립니다.
-            Color color = vertical ? White : new Color(0.07f, 0.05f, 0.12f, 1f);
-            float burst = SlashInterval * SlashHits; // 터지는 동안 나머지 4프레임
-            FxPlayer fx = CosmicFx.Spawn("slash", new Vector3(center.x, center.y + 0.5f, center.z), vertical ? 90f : 0f, 7f, 4f, color, 4f / burst, false, -1f);
-            if (fx != null)
-                fx.holdFirst = SlashDelay - burst / 4f; // 첫 프레임(선)이 SlashDelay 까지 보이도록
+            // 선: 처음 5프레임(또렷한 선)이 SlashDelay 동안 보이고, 나머지가 파열이 끝날 때까지 이어집니다.
+            float total = SlashDelay + SlashInterval * SlashHits;
+            CosmicFx.Spawn(vertical ? "cut_white" : "cut_black", middle, angle, stretch, 1f, White, 12f / total, false, -1f);
+            CosmicFx.Spawn("ring", middle, 0f, 1.5f, 1.5f, White, 25f, false, -1f);
         }
 
         // 섬멸·명멸: 창이 옆에서 날아와 가까운 적을 꿰뚫습니다.

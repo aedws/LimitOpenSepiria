@@ -1,30 +1,49 @@
-# 우주 속성 이펙트 중 코드로 그리는 것들: 참월의 베기(slash), 섬멸·명멸의 창(spear_blue, spear_red).
+# 우주 속성 이펙트 중 코드로 그리는 것들: 참월(cut_black, cut_white, needle, ring), 섬멸·명멸의 창(spear_blue, spear_red).
 # 프레임을 가로로 이어 붙인 한 줄로 저장합니다. (void.png, ignorance.png 는 이미지 생성 API 로 만든 뒤 fx_slice.py 로 잘랐습니다.)
 from PIL import Image
 import random, sys
 out=sys.argv[1]
 W=(255,255,255,255); G=(214,220,236,255)
 
-def slash():
-    fw,fh,n=96,16,5; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2; rnd=random.Random(7)
-    def lens(f,half,x0=2,x1=fw-3,color=W):
-        for x in range(x0,x1+1):
-            t=(x-x0)/(x1-x0); k=1-abs(2*t-1)**2.2          # 양 끝이 뾰족한 렌즈 모양
-            h=int(round(half*k))
-            for y in range(cy-h,cy+h+1): px[f*fw+x,y]=color
-    lens(0,0)                                              # 1: 가는 선
-    lens(1,2); lens(1,0,0,fw-1)                            # 2: 굵은 칼날
-    lens(2,3); lens(2,0,0,fw-1)                            # 3: 가장 굵고, 가장자리에 파편
-    for _ in range(26):
-        x=rnd.randrange(6,fw-6); y=cy+rnd.choice((-5,-4,4,5)); L=rnd.randrange(2,6)
-        for i in range(L): px[2*fw+min(fw-1,x+i),y]=G
-    for x in range(4,fw-4):                                # 4: 두 줄로 갈라지며 끊김
-        if (x//7)%3!=2: px[3*fw+x,cy-1]=W
-        if (x//5)%4!=1: px[3*fw+x,cy+2]=G
-    for _ in range(14):                                    # 5: 흩어지는 조각
-        x=rnd.randrange(4,fw-8); y=cy+rnd.randrange(-3,4); L=rnd.randrange(2,5)
-        for i in range(L): px[4*fw+x+i,y]=G if rnd.random()<0.6 else W
-    sheet.save(out+'slash.png')
+# 참월: 화면을 가르는 면도날 같은 직선. 처음엔 또렷한 선(가운데 심 + 양쪽 테), 이어서 가는 선, 마지막엔 점선으로 끊기며 사라집니다.
+def cut(name,core,rim,fade):
+    fw,fh,n=96,8,12; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2
+    for f in range(n):
+        for x in range(fw):
+            X=f*fw+x
+            if f<5:                                   # 또렷한 선: 테-심-테
+                px[X,cy-1]=rim; px[X,cy]=core; px[X,cy+1]=rim
+                if f==0: px[X,cy-2]=rim[:3]+(110,); px[X,cy+2]=rim[:3]+(110,)   # 긋는 순간 한 겹 더 번쩍
+            elif f<8:                                 # 가는 선
+                px[X,cy]=fade[:3]+((200,150,110)[f-5],)
+            else:                                     # 점선(갈수록 듬성듬성)
+                period=(6,8,10,12)[f-8]; on=(4,4,3,2)[f-8]
+                if x%period<on: px[X,cy]=fade[:3]+((120,95,70,45)[f-8],)
+    sheet.save(out+name+'.png')
+
+# 파열: 양 끝이 뾰족한 흰 바늘(렌즈 모양)이 번쩍였다가 희미해지며 점선으로 흩어집니다.
+def needle():
+    fw,fh,n=96,12,6; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2
+    half=(4,3,2,1,0,0); alpha=(255,255,200,140,110,60)
+    for f in range(n):
+        for x in range(fw):
+            t=x/(fw-1); k=1-abs(2*t-1)**1.6
+            h=int(round(half[f]*k))
+            if f>=4 and x%(8 if f==4 else 12)>=(5 if f==4 else 3): continue
+            for y in range(cy-h,cy+h+1): px[f*fw+x,y]=(255,255,255,alpha[f])
+    sheet.save(out+'needle.png')
+
+# 충격 고리: 가는 흰 원이 퍼져 나갑니다.
+def ring():
+    import math
+    fw,n=48,5; sheet=Image.new('RGBA',(fw*n,fw),(0,0,0,0)); px=sheet.load(); c=(fw-1)/2
+    for f in range(n):
+        r=5+f*4.5; a=(255,230,180,120,60)[f]
+        for y in range(fw):
+            for x in range(fw):
+                d=math.hypot(x-c,y-c)
+                if abs(d-r)<0.6: px[f*fw+x,y]=(255,255,255,a)
+    sheet.save(out+'ring.png')
 
 def spear(name,pal):
     # pal: 윤곽, 어두운 색, 중간 색, 밝은 색, 흰색
@@ -49,6 +68,9 @@ def spear(name,pal):
             if 0<=x<fw and 0<=y<fh: px[f*fw+x,y]=c
     sheet.save(out+name+'.png')
 
-slash()
+cut('cut_black',(14,10,24,255),(255,255,255,255),(236,236,246,255))
+cut('cut_white',(255,255,255,255),(151,199,254,255),(190,214,255,255))
+needle()
+ring()
 spear('spear_blue',((20,30,70,255),(59,81,130,255),(100,153,232,255),(170,226,255,255),(255,255,255,255)))
 spear('spear_red',((70,20,24,255),(183,50,39,255),(237,120,46,255),(255,214,110,255),(255,255,255,255)))

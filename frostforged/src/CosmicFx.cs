@@ -16,7 +16,8 @@ namespace FrostforgedCrescent
         // 그림 이름 → 프레임 수
         private static readonly Dictionary<string, int> Sheets = new Dictionary<string, int>
         {
-            { "ignorance", 6 }, { "void", 8 }, { "slash", 5 }, { "spear_blue", 4 }, { "spear_red", 4 },
+            { "ignorance", 6 }, { "void", 8 }, { "spear_blue", 4 }, { "spear_red", 4 },
+            { "cut_black", 12 }, { "cut_white", 12 }, { "needle", 6 }, { "ring", 5 },
         };
 
         private static readonly Dictionary<string, Sprite[]> Loaded = new Dictionary<string, Sprite[]>();
