@@ -17,7 +17,7 @@ namespace FrostforgedCrescent
         private static readonly Dictionary<string, int> Sheets = new Dictionary<string, int>
         {
             { "ignorance", 6 }, { "void", 8 }, { "spear_blue", 3 }, { "spear_red", 3 }, { "spear_trail", 4 },
-            { "cut_black", 12 }, { "cut_white", 12 }, { "needle", 6 }, { "ring", 5 },
+            { "cut_black", 12 }, { "cut_white", 12 }, { "needle", 6 }, { "needle_black", 6 }, { "ring", 5 },
         };
 
         private static readonly Dictionary<string, Sprite[]> Loaded = new Dictionary<string, Sprite[]>();

@@ -542,6 +542,7 @@ namespace FrostforgedCrescent
         // 잠깐 뒤 그 선을 따라 공간이 갈라집니다: 타마다 흰 바늘이 엇갈려 번쩍이며 선 주변의 적 모두에게 피해가 들어가고,
         // 선은 가는 점선으로 끊기며 사라집니다. 흑은 가로(검은 심 + 흰 테), 백은 세로(흰 심 + 푸른 테).
         private static readonly float[] NeedleTilt = { -14f, 14f, 0f };
+        private const float CutThickness = 3f; // 가로·세로 선의 굵기 배율(그림은 3픽셀 굵기)
 
         private static void Slash(object avatar, bool vertical, Vector3 center)
         {
@@ -557,7 +558,8 @@ namespace FrostforgedCrescent
                 {
                     if (Dead(avatar))
                         return;
-                    CosmicFx.Spawn("needle", middle, angle + tilt, stretch, 1.5f, White, 25f, false, -1f);
+                    // 흑은 검은 바늘에 별가루, 백은 흰 바늘
+                    CosmicFx.Spawn(vertical ? "needle" : "needle_black", middle, angle + tilt, stretch, 1.5f, White, 25f, false, -1f);
                     foreach (object creature in Hostiles(avatar).ToList())
                     {
                         Vector3 p = Position(creature);
@@ -570,7 +572,7 @@ namespace FrostforgedCrescent
             }
             // 선: 처음 5프레임(또렷한 선)이 SlashDelay 동안 보이고, 나머지가 파열이 끝날 때까지 이어집니다.
             float total = SlashDelay + SlashInterval * SlashHits;
-            CosmicFx.Spawn(vertical ? "cut_white" : "cut_black", middle, angle, stretch, 1f, White, 12f / total, false, -1f);
+            CosmicFx.Spawn(vertical ? "cut_white" : "cut_black", middle, angle, stretch, CutThickness, White, 12f / total, false, -1f);
             CosmicFx.Spawn("ring", middle, 0f, 1.5f, 1.5f, White, 25f, false, -1f);
         }
 
@@ -630,7 +632,7 @@ namespace FrostforgedCrescent
             // 지나간 자리의 잔상: 길 한가운데에, 창이 반쯤 지났을 때
             Color trail = kind == 2 ? BlueTrail : RedTrail;
             var middle = new Vector3(origin.x, origin.y + 0.5f, origin.z);
-            Later(flight * 0.5f, () => CosmicFx.Spawn("spear_trail", middle, angle, 2f, 1f, trail, 12f, false, -1f));
+            Later(flight * 0.5f, () => CosmicFx.Spawn("spear_trail", middle, angle, 3f, 1f, trail, 12f, false, -1f));
 
             float amount = TaegeukAmount(avatar, kind);
             string id = TaegeukPrefix + (kind == 2 ? "SpearBlue" : "SpearRed");
