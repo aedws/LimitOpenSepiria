@@ -1,5 +1,4 @@
 # 서리기수 : 돌격창 블루비틀의 손에 든 그림(창끝이 위). 글자 한 칸이 한 픽셀이고 윤곽이 자동으로 둘러집니다.
-# lance_icon.png(아이콘)은 같은 그림에 2픽셀 윤곽을 두른 것으로, 따로 보관합니다.
 from PIL import Image
 import sys
 O=(27,24,40,255)
@@ -47,7 +46,7 @@ def render(rows):
         for dx,dy in RING: px[x+dx,y+dy]=O
     for (x,y),c in body.items(): px[x,y]=c
     return im
-# 기수별 배색(같은 모양, 색만 다름). 손에 든 그림은 1픽셀 윤곽, 아이콘은 2픽셀 윤곽입니다.
+# 기수별 배색(같은 모양, 색만 다름). 손에 든 그림과 아이콘 모두 1픽셀 윤곽입니다.
 BLUE=dict(PAL)
 VARIANTS={
  'knight': {'W':(255,255,255),'e':(222,224,234),'b':(189,190,207),'c':(126,135,167),'d':(80,84,110),'a':(237,177,46)},
@@ -68,10 +67,10 @@ def draw(pal,ring,m):
     return im
 out,prev=sys.argv[1],sys.argv[2]
 sheet=Image.new('RGBA',(5*110,260),(70,90,90,255))
-im=render(rows); im.save(out+'lance.png'); b=im.resize((im.width*5,im.height*5),Image.NEAREST); sheet.paste(b,(10,10),b)
+im=render(rows); im.save(out+'lance.png'); im.save(out+'lance_icon.png'); b=im.resize((im.width*5,im.height*5),Image.NEAREST); sheet.paste(b,(10,10),b)
 for i,(name,colors) in enumerate(VARIANTS.items()):
     pal=dict(BLUE); pal.update({k:v+(255,) for k,v in colors.items()})
     draw(pal,RING,1).save(out+'lance_%s.png'%name)
-    icon=draw(pal,RING2,3); icon.save(out+'lance_%s_icon.png'%name)
+    icon=draw(pal,RING,1); icon.save(out+'lance_%s_icon.png'%name)   # 아이콘도 1픽셀 윤곽
     b=icon.resize((icon.width*5,icon.height*5),Image.NEAREST); sheet.paste(b,(110*(i+1)+10,10),b)
 sheet.save(prev)

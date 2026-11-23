@@ -18,10 +18,8 @@ namespace FrostforgedCrescent
     ///  - 깃이 20개 이상이면 공격 속도 +100%, 화상 최대 중첩 +3.
     /// 뇌격기수
     ///  - 무기 공격이 적중한 적마다 먹구름 번개를 떨어뜨립니다(먹구름 1 소모, 없으면 50% 피해 — DarkCloudBoost).
-    ///  - 구름씨 화살촉의 확률(%)만큼 먹구름 번개의 피해도 늘어납니다(여러 개면 합산).
-    /// 종말기수
-    ///  - 태양검·얼음 무구·먹구름의 피해가 혼돈 피해로 바뀌고, 가장 높은 속성 피해를 기준으로 다시 계산됩니다.
-    ///    (치명타 확률·피해 증가는 LanceAddon 에서 능력치로 줍니다.)
+    ///  - 먹구름 강화 확률(구름씨 화살촉)이 100% 를 넘으면, 넘은 만큼이 피해 배율로 이어 붙습니다.
+    /// 종말기수의 치명타 확률·피해 증가는 LanceAddon 에서 능력치로 줍니다.
     /// </summary>
     internal static class Riders
     {
@@ -35,7 +33,6 @@ namespace FrostforgedCrescent
 
         private static readonly ConditionalWeakTable<object, State> States = new ConditionalWeakTable<object, State>();
         private static bool pendingFeather, featherShot;
-        private static HashSet<string> armamentIds;
         private static readonly bool[] Logged = new bool[6];
         private static bool loggedFailure;
 
@@ -282,37 +279,11 @@ namespace FrostforgedCrescent
             }
         }
 
-        private sealed class ArrowCache { public long Ticks; public int Percent; }
-        private static readonly ConditionalWeakTable<object, ArrowCache> Arrows = new ConditionalWeakTable<object, ArrowCache>();
+        private static readonly System.Random Dice = new System.Random();
 
-        // 보유한 구름씨 화살촉의 확률 합(%). 찾는 비용이 있어 1초 동안은 같은 값을 씁니다.
-        private static int ArrowheadPercent(object avatar)
-        {
-            ArrowCache cache = Arrows.GetOrCreateValue(avatar);
-            long now = DateTime.UtcNow.Ticks;
-            if (cache.Ticks != 0 && now - cache.Ticks < TimeSpan.TicksPerSecond)
-                return cache.Percent;
-            cache.Ticks = now;
-            cache.Percent = 0;
-            Type charm = Reflect.GameType("Charm_Lightning_BasicAttack");
-            MethodInfo find = typeof(UnityEngine.Object).GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(m => m.Name == "FindObjectsOfType" && !m.IsGenericMethod && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(Type));
-            if (charm == null || find == null)
-                return 0;
-            foreach (object owned in (IEnumerable)find.Invoke(null, new object[] { charm }))
-            {
-                if (Reflect.IsNull(owned) || !ReferenceEquals(Reflect.Get(owned, "NetworkAvatar"), avatar) || !Equals(Reflect.Get(owned, "IsEffectEnabled"), true))
-                    continue;
-                var byLevel = Reflect.Get(owned, "lightningPercentByLevel") as int[];
-                if (byLevel == null || byLevel.Length == 0)
-                    continue;
-                int index = Convert.ToInt32(Reflect.Call(owned, null, "CurrentLevelToIdx"));
-                cache.Percent += byLevel[Math.Max(0, Math.Min(byLevel.Length - 1, index))];
-            }
-            return cache.Percent;
-        }
-
-        // 먹구름 번개의 피해(서버). 뇌격기수면 구름씨 화살촉의 확률만큼 피해가 늘어납니다.
+        // 먹구름 번개의 피해(서버). 게임은 '먹구름 강화 확률'(구름씨 화살촉)이 100% 를 넘어도 2배 한 번만 적용합니다.
+        // 뇌격기수는 넘은 만큼을 배율로 이어 붙입니다: 100% 마다 +1배, 나머지는 그 확률로 +1배.
+        // (예: 250% → 3배 확정, 50% 확률로 4배)
         private static void LightningPrefix(object __instance, ref int baseDamagePercent)
         {
             try
@@ -320,62 +291,20 @@ namespace FrostforgedCrescent
                 object avatar = Reflect.Get(__instance, "Networkavatar");
                 if (LanceAddon.KindOf(avatar) != LanceAddon.Thunder)
                     return;
-                int bonus = ArrowheadPercent(avatar);
-                if (bonus <= 0)
+                int luck = ItemEffects.Stat(avatar, "DARKCLOUDLUCK");
+                if (luck <= 100)
                     return;
-                baseDamagePercent = baseDamagePercent * (100 + bonus) / 100;
-                Once(4, "뇌격기수 확인: 구름씨 화살촉으로 먹구름 피해 +" + bonus + "%");
+                int over = luck - 100;
+                int multiplier = 2 + over / 100 + (Dice.Next(100) < over % 100 ? 1 : 0); // 게임이 이미 2배는 적용합니다
+                if (multiplier <= 2)
+                    return;
+                baseDamagePercent = baseDamagePercent * multiplier / 2;
+                Once(4, "뇌격기수 확인: 먹구름 강화 확률 " + luck + "% → " + multiplier + "배");
             }
             catch (Exception e)
             {
                 Fail("뇌격 피해", e);
             }
-        }
-
-        // ── 종말기수 ─────────────────────────────────────────────────────────
-        // 얼음 무구(충전식 아티팩트)들의 피해 이름. 아이템 목록에서 한 번 모읍니다.
-        private static HashSet<string> ArmamentIds()
-        {
-            if (armamentIds != null)
-                return armamentIds;
-            var ids = new HashSet<string>();
-            try
-            {
-                Type database = Reflect.GameType("ItemDatabase");
-                var all = Reflect.Call(null, database, "GetAllItemID") as IEnumerable;
-                if (all != null)
-                    foreach (object id in all)
-                    {
-                        object entity = Reflect.Call(null, database, "FindItemById", id);
-                        var prefab = Reflect.IsNull(entity) ? null : Reflect.Get(entity, "resourcePrefab") as GameObject;
-                        Component charm = Reflect.IsNull(prefab) ? null : prefab.GetComponent(Reflect.GameType("Charm_Basic"));
-                        if (Reflect.IsNull(charm) || Reflect.IsNull(Reflect.Get(charm, "chargingCharm")))
-                            continue;
-                        string damageId = Reflect.Get(charm, "damageId") as string;
-                        if (!string.IsNullOrEmpty(damageId))
-                            ids.Add(damageId);
-                    }
-            }
-            catch (Exception e)
-            {
-                Fail("얼음 무구 목록", e);
-            }
-            Log.Info("종말기수: 얼음 무구 피해 " + ids.Count + "종 [" + string.Join(", ", ids.ToArray()) + "]");
-            armamentIds = ids;
-            return ids;
-        }
-
-        /// <summary>종말기수가 주는 이 피해가 태양검·얼음 무구·먹구름의 것인가</summary>
-        public static bool IsDoomSource(string damageId)
-        {
-            if (string.IsNullOrEmpty(damageId))
-                return false;
-            return damageId == "Ability_FlameSword" || damageId == "Ability_DarkCloud" || ArmamentIds().Contains(damageId);
-        }
-
-        public static void LogDoom()
-        {
-            Once(5, "종말기수 확인: 태양검·얼음 무구·먹구름 피해를 혼돈 피해로 전환");
         }
     }
 }
