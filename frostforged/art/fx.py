@@ -5,20 +5,33 @@ import random, sys
 out=sys.argv[1]
 W=(255,255,255,255); G=(214,220,236,255)
 
-# 참월: 화면을 가르는 면도날 같은 직선. 처음엔 또렷한 선(가운데 심 + 양쪽 테), 이어서 가는 선, 마지막엔 점선으로 끊기며 사라집니다.
+# 참월: 화면을 가르는 직선. 한 줄로 그어졌다가 세 줄로 갈라져 벌어지고, 가는 선을 거쳐 점선으로 끊기며 사라집니다.
+# core 는 가운데 심, rim 은 테(곁줄의 밝은 쪽), fade 는 사라질 때의 색입니다.
 def cut(name,core,rim,fade):
-    fw,fh,n=96,8,12; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2
+    fw,fh,n=96,16,12; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2
+    spread=(0,0,0,2,4,5,6,6,7,7,7,7)              # 곁줄이 가운데에서 떨어진 거리(프레임별)
     for f in range(n):
         for x in range(fw):
             X=f*fw+x
-            if f<5:                                   # 또렷한 선: 테-심-테
-                px[X,cy-1]=rim; px[X,cy]=core; px[X,cy+1]=rim
-                if f==0: px[X,cy-2]=rim[:3]+(110,); px[X,cy+2]=rim[:3]+(110,)   # 긋는 순간 한 겹 더 번쩍
-            elif f<8:                                 # 가는 선
-                px[X,cy]=fade[:3]+((200,150,110)[f-5],)
-            else:                                     # 점선(갈수록 듬성듬성)
-                period=(6,8,10,12)[f-8]; on=(4,4,3,2)[f-8]
-                if x%period<on: px[X,cy]=fade[:3]+((120,95,70,45)[f-8],)
+            def line(y,half,a=255,solid=True):
+                # 심(half*2+1 픽셀) + 위아래 테 1픽셀
+                if not solid and x%((6,8,10,12)[min(3,f-8)])>=(4,4,3,2)[min(3,f-8)]: return
+                for dy in range(-half,half+1):
+                    if 0<=y+dy<fh: px[X,y+dy]=core[:3]+(a,)
+                for dy in (-half-1,half+1):
+                    if 0<=y+dy<fh: px[X,y+dy]=rim[:3]+(a,)
+            if f<3:                                # 한 줄: 굵은 심
+                line(cy,2 if f else 3)
+            elif f<8:                              # 세 줄로 갈라짐: 가운데는 가늘어지고 곁줄이 벌어짐
+                a=(255,255,235,210,180)[f-3]
+                line(cy,1 if f<6 else 0,a)
+                for side in (-1,1): line(cy+side*spread[f],0,a)
+            else:                                  # 점선으로 끊기며 사라짐
+                a=(150,115,80,45)[f-8]
+                if x%((6,8,10,12)[f-8])<(4,4,3,2)[f-8]:
+                    px[X,cy]=fade[:3]+(a,)
+                    for side in (-1,1):
+                        if (x//3+f)%2==0: px[X,cy+side*spread[f]]=fade[:3]+(a*2//3,)
     sheet.save(out+name+'.png')
 
 # 파열: 양 끝이 뾰족한 흰 바늘(렌즈 모양)이 번쩍였다가 희미해지며 점선으로 흩어집니다.
@@ -69,38 +82,36 @@ def ring():
                 if abs(d-r)<0.6: px[f*fw+x,y]=(255,255,255,a)
     sheet.save(out+'ring.png')
 
-# 섬멸·명멸의 창: 빛으로 된 창 한 자루. 앞(오른쪽)에 능선이 있는 잎 모양 창날, 그 뒤로 곧은 자루,
-# 꼬리에는 길이가 다른 결 몇 가닥이 프레임마다 일렁입니다. 짙은 색 윤곽을 둘러 창 모양이 또렷하게 보입니다.
+# 섬멸·명멸의 투사체: 창 모양이 아니라 빛줄기. 가늘고 흰 심이 앞(오른쪽)으로 뾰족하게 빠지고 머리에서 가장 밝게 빛나며,
+# 양옆에 1픽셀짜리 가는 결이 듬성듬성 붙어 프레임마다 일렁입니다.
 def spear(name,pale,light,accent,dark):
     fw,fh,n=80,16,3; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2
     Wh=(255,255,255,255)
-    head=[0,0,1,1,1,2,2,2,3,3,3,3,3,2,2,1]            # 창끝에서 뒤로 가며 반 폭(픽셀)
     for f in range(n):
-        rnd=random.Random(21+f); body={}
-        tip=fw-2
-        for k,h in enumerate(head):                    # 창날
-            x=tip-k
-            for dy in range(-h,h+1):
-                body[(x,cy+dy)]=Wh if dy==0 else (pale if dy<0 else light)
-        base=tip-len(head)
-        for dy in (-4,4): body[(base+1,cy+dy)]=light   # 미늘
-        for dy in range(-2,3): body[(base,cy+dy)]=accent; body[(base-1,cy+dy)]=pale if abs(dy)<2 else accent   # 창날 밑동의 고리
-        for x in range(16,base-1):                     # 자루
-            body[(x,cy)]=Wh if (x+f)%7 else pale
-            body[(x,cy-1)]=pale; body[(x,cy+1)]=light
-        for x in range(16,base-1,9): body[(x,cy-1)]=accent; body[(x,cy+1)]=accent   # 자루 마디
-        # 윤곽
-        for (x,y) in list(body):
-            for dx,dy in ((1,0),(-1,0),(0,1),(0,-1)):
-                q=(x+dx,y+dy)
-                if q not in body and 0<=q[0]<fw and 0<=q[1]<fh: px[f*fw+q[0],q[1]]=dark
-        for (x,y),c in body.items(): px[f*fw+x,y]=c
-        # 꼬리의 결(윤곽 없이 옅게)
-        for k in range(5):
-            dy=(-5,-3,0,3,5)[k]; L=rnd.randrange(8,20) if dy else rnd.randrange(10,16); x1=16 if dy==0 else rnd.randrange(18,34)
-            color=(accent,light,pale,light,accent)[k]
-            for x in range(max(0,x1-L),x1):
-                if px[f*fw+x,cy+dy][3]==0: px[f*fw+x,cy+dy]=color[:3]+(210,)
+        rnd=random.Random(31+f)
+        def put(x,y,c):
+            if 0<=x<fw and 0<=y<fh: px[f*fw+x,y]=c
+        # 가는 결: 가운데에서 멀수록 짧고 옅게
+        for side in (-1,1):
+            for k in range(1,4):                         # 결 사이를 한 줄씩 띄워 가늘게 보이게 합니다
+                dy=side*(k*2+1)
+                L=int((50-k*11)*rnd.uniform(0.7,1.1)); x0=rnd.randrange(6,24)+k*5
+                color=(pale,light,accent)[k-1]
+                if rnd.random()<0.15: continue
+                for x in range(x0,x0+L): put(x,cy+dy,color[:3]+((240,200,150)[k-1],))
+                gap=rnd.randrange(2,4)                   # 떨어져 나간 조각
+                for x in range(x0-gap*3,x0-gap): put(x,cy+dy,accent[:3]+(120,))
+        # 심: 뒤는 가늘게 사라지고, 머리 쪽은 3픽셀, 맨 앞은 1픽셀로 뾰족
+        for x in range(8,fw-1):
+            t=(x-8)/(fw-10)
+            h=0 if t<0.35 or t>0.93 else 1
+            for y in range(cy-h,cy+h+1): put(x,y,Wh if t>0.2 else pale)
+        # 머리의 빛: 작은 마름모
+        hx=fw-12
+        for dx in range(-4,5):
+            for dy in range(-3,4):
+                if abs(dx)/4+abs(dy)/3<=1.0: put(hx+dx,cy+dy,Wh)
+                elif abs(dx)/5+abs(dy)/4<=1.0: put(hx+dx,cy+dy,pale)
     sheet.save(out+name+'.png')
 
 # 창이 지나간 자리: 가는 줄기 몇 가닥과 십자 반짝임이 옅어지며 사라집니다(흰색으로 그리고 게임에서 색을 입힙니다).
