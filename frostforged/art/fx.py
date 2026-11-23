@@ -5,33 +5,28 @@ import random, sys
 out=sys.argv[1]
 W=(255,255,255,255); G=(214,220,236,255)
 
-# 참월: 화면을 가르는 직선. 한 줄로 그어졌다가 세 줄로 갈라져 벌어지고, 가는 선을 거쳐 점선으로 끊기며 사라집니다.
-# core 는 가운데 심, rim 은 테(곁줄의 밝은 쪽), fade 는 사라질 때의 색입니다.
+# 참월: 화면을 가르는 직선. 처음엔 한 줄(테-심-테)로 그어지고, 곧 같은 줄이 위아래로 하나씩 늘어나 세 줄이 됩니다
+# (세 줄이 나란히 붙어 처음의 3배 굵기). 이어서 세 줄이 가늘어지고 점선으로 끊기며 사라집니다.
+# core 는 심, rim 은 테, fade 는 사라질 때의 색입니다.
 def cut(name,core,rim,fade):
     fw,fh,n=96,16,12; sheet=Image.new('RGBA',(fw*n,fh),(0,0,0,0)); px=sheet.load(); cy=fh//2
-    spread=(0,0,0,2,4,5,6,6,7,7,7,7)              # 곁줄이 가운데에서 떨어진 거리(프레임별)
+    offset=(0,1,2,3,3,3,3,3,3,3,3,3)              # 곁줄이 가운데 줄에서 떨어진 거리: 0 → 3(줄 하나의 굵기)
     for f in range(n):
         for x in range(fw):
             X=f*fw+x
-            def line(y,half,a=255,solid=True):
-                # 심(half*2+1 픽셀) + 위아래 테 1픽셀
-                if not solid and x%((6,8,10,12)[min(3,f-8)])>=(4,4,3,2)[min(3,f-8)]: return
-                for dy in range(-half,half+1):
-                    if 0<=y+dy<fh: px[X,y+dy]=core[:3]+(a,)
-                for dy in (-half-1,half+1):
-                    if 0<=y+dy<fh: px[X,y+dy]=rim[:3]+(a,)
-            if f<3:                                # 한 줄: 굵은 심
-                line(cy,2 if f else 3)
-            elif f<8:                              # 세 줄로 갈라짐: 가운데는 가늘어지고 곁줄이 벌어짐
-                a=(255,255,235,210,180)[f-3]
-                line(cy,1 if f<6 else 0,a)
-                for side in (-1,1): line(cy+side*spread[f],0,a)
+            def line(y):                           # 줄 하나: 테-심-테
+                px[X,y-1]=rim; px[X,y]=core; px[X,y+1]=rim
+            if f<7:
+                if offset[f]:                      # 곁줄 먼저 그리고 가운데 줄을 그 위에
+                    line(cy-offset[f]); line(cy+offset[f])
+                line(cy)
+            elif f<9:                              # 세 줄이 가늘어짐(심만 남음)
+                a=(200,150)[f-7]
+                for y in (cy-3,cy,cy+3): px[X,y]=fade[:3]+(a,)
             else:                                  # 점선으로 끊기며 사라짐
-                a=(150,115,80,45)[f-8]
-                if x%((6,8,10,12)[f-8])<(4,4,3,2)[f-8]:
-                    px[X,cy]=fade[:3]+(a,)
-                    for side in (-1,1):
-                        if (x//3+f)%2==0: px[X,cy+side*spread[f]]=fade[:3]+(a*2//3,)
+                period=(6,9,12)[f-9]; on=(4,4,3)[f-9]; a=(110,75,45)[f-9]
+                for k,y in enumerate((cy-3,cy,cy+3)):
+                    if (x+k*2)%period<on: px[X,y]=fade[:3]+(a,)
     sheet.save(out+name+'.png')
 
 # 파열: 양 끝이 뾰족한 흰 바늘(렌즈 모양)이 번쩍였다가 희미해지며 점선으로 흩어집니다.
