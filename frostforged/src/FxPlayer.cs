@@ -15,6 +15,7 @@ namespace FrostforgedCrescent
         public bool loop;
         public float life = -1f;      // 0 이상이면 이 시간 뒤에 사라집니다
         public float velocityX, velocityY;
+        public float holdFirst;       // 첫 프레임을 이 시간만큼 붙잡아 둔 뒤 재생합니다
         public SpriteRenderer target;
 
         private float clock;
@@ -34,7 +35,7 @@ namespace FrostforgedCrescent
                 int count = frames == null ? 0 : frames.Length;
                 if (count > 0 && target != null)
                 {
-                    int index = (int)(clock * framesPerSecond);
+                    int index = (int)(Math.Max(0f, clock - holdFirst) * framesPerSecond);
                     if (index >= count)
                     {
                         if (!loop)

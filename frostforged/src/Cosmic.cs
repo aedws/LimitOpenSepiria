@@ -37,6 +37,9 @@ namespace FrostforgedCrescent
         public const float VoidPercent = 500f, VoidPercentUp = 750f, VoidStun = 2f;
         // 태극
         public const float ChargeTime = 5f, SpearRange = 9f, FlatDamage = 30f;
+        // 참월: 선이 그어지고 SlashDelay 뒤부터 SlashHits 번, SlashInterval 간격으로 피해(총량은 그대로, 타수만큼 나눔)
+        public const float SlashDelay = 0.2f, SlashInterval = 0.2f, SlashHalfWidth = 4f, SlashReach = 21f;
+        public const int SlashHits = 3;
 
         public static readonly Color Violet = new Color(0.66f, 0.52f, 1f, 1f);
         private static readonly Color White = new Color(1f, 1f, 1f, 1f);
@@ -48,7 +51,7 @@ namespace FrostforgedCrescent
             public float SlowUntil, BurstAt, DotUntil, NextTick, LastApply = -999f, Slowed;
         }
 
-        private sealed class Charges { public readonly float[] Time = new float[4]; public float Check; }
+        private sealed class Charges { public readonly float[] Time = new float[4]; public float Check, LastCall = -999f; public bool BasicPending; }
 
         private sealed class Delayed { public float At; public Action Run; }
 
@@ -320,6 +323,25 @@ namespace FrostforgedCrescent
                 int score = Stat(attacker, ItemContent.ScoreCosmic);
                 if (score > 0 && !Dead(victim))
                     Hurt(attacker, victim, score, ScoreId);
+                Charges charges;
+                if (!Players.TryGetValue(attacker, out charges))
+                    return;
+                // 참월 — 일반 공격에 처음 맞은 적을 중심축으로, 충전된 참월이 발동
+                if (charges.BasicPending)
+                {
+                    charges.BasicPending = false;
+                    for (int i = 0; i < 2; i++)
+                        if (charges.Time[i] >= ChargeTime && Stat(attacker, PowerStats[i]) > 0)
+                            Fire(attacker, charges, i, victim, true);
+                }
+                // 종말기수 — 공격할 때마다 보유한 섬멸 '청'·명멸 '적'을 충전과 관계없이 불러옵니다(한 번 휘두를 때 한 번)
+                if (LanceAddon.KindOf(attacker) == LanceAddon.Doom && now - charges.LastCall >= 0.15f)
+                {
+                    charges.LastCall = now;
+                    for (int i = 2; i < 4; i++)
+                        if (Stat(attacker, PowerStats[i]) > 0)
+                            Fire(attacker, charges, i, victim, false);
+                }
                 // 일월광풍 — 무기 공격 시 충전된 태극 발동형 아티팩트를 바로 발동
                 if (Stat(attacker, ItemContent.TaegeukOnHit) > 0)
                     FireCharged(attacker, victim);
@@ -379,7 +401,7 @@ namespace FrostforgedCrescent
             }
         }
 
-        // 일반 공격이 나감(서버): 충전된 참월이 발동합니다.
+        // 일반 공격이 나감(서버): 이 공격이 적에게 처음 닿을 때 충전된 참월이 발동합니다(OnWeaponHit).
         private static void BasicAttackPostfix(object __instance)
         {
             try
@@ -392,11 +414,8 @@ namespace FrostforgedCrescent
                     return;
                 Track(avatar);
                 Charges charges;
-                if (!Players.TryGetValue(avatar, out charges))
-                    return;
-                for (int i = 0; i < 2; i++)
-                    if (charges.Time[i] >= ChargeTime && Stat(avatar, PowerStats[i]) > 0)
-                        Fire(avatar, charges, i, null, true);
+                if (Players.TryGetValue(avatar, out charges))
+                    charges.BasicPending = true; // 이 공격에 처음 맞는 적이 참월의 중심축이 됩니다
             }
             catch (Exception e)
             {
@@ -412,7 +431,7 @@ namespace FrostforgedCrescent
                 return;
             for (int i = 0; i < 4; i++)
                 if (charges.Time[i] >= ChargeTime && Stat(avatar, PowerStats[i]) > 0)
-                    Fire(avatar, charges, i, i >= 2 ? victim : null, true);
+                    Fire(avatar, charges, i, victim, true);
         }
 
         private static void Fire(object avatar, Charges charges, int kind, object target, bool natural)
@@ -420,13 +439,14 @@ namespace FrostforgedCrescent
             if (natural)
                 charges.Time[kind] = 0f;
             int repeats = 1 + Math.Max(0, Stat(avatar, ItemContent.TaegeukExtra));
+            Vector3 center = Dead(target) ? Position(avatar) : Position(target); // 참월의 중심축: 맞은 적(없으면 캐릭터)
             for (int r = 0; r < repeats; r++)
             {
                 int index = r;
                 if (index == 0)
-                    Activate(avatar, kind, target);
+                    Activate(avatar, kind, target, center);
                 else
-                    Later(0.3f * index, () => { if (!Dead(avatar)) Activate(avatar, kind, null); });
+                    Later(0.3f * index, () => { if (!Dead(avatar)) Activate(avatar, kind, null, center); });
             }
             Once(3, "우주 속성 확인: 태극 발동 (" + new[] { "참월 흑", "참월 백", "섬멸 청", "명멸 적" }[kind] + ", " + repeats + "회)");
 
@@ -458,10 +478,10 @@ namespace FrostforgedCrescent
             return amount * (1f + Math.Max(0, Stat(avatar, ItemContent.TaegeukDamage)) / 100f);
         }
 
-        private static void Activate(object avatar, int kind, object target)
+        private static void Activate(object avatar, int kind, object target, Vector3 center)
         {
             if (kind < 2)
-                Slash(avatar, kind == 1);
+                Slash(avatar, kind == 1, center);
             else
             {
                 int count = Math.Max(1, Stat(avatar, CountStats[kind]));
@@ -476,24 +496,34 @@ namespace FrostforgedCrescent
             }
         }
 
-        // 참월: 캐릭터를 지나는 직선으로 화면을 가릅니다. 흑은 가로, 백은 세로.
-        private static void Slash(object avatar, bool vertical)
+        // 참월(콤보 데스폴트를 본뜸): 중심축을 지나는 선이 화면 끝에서 끝까지 즉시 그어지고,
+        // 잠깐 뒤 그 선을 따라 공간이 갈라지며 선 주변의 적 모두에게 여러 번 피해가 들어갑니다. 흑은 가로, 백은 세로.
+        private static void Slash(object avatar, bool vertical, Vector3 center)
         {
-            Vector3 origin = Position(avatar);
-            float amount = TaegeukAmount(avatar, vertical ? 1 : 0);
+            float amount = TaegeukAmount(avatar, vertical ? 1 : 0) / SlashHits;
             string id = TaegeukPrefix + (vertical ? "SlashWhite" : "SlashBlack");
-            const float half = 1.3f, reach = 18f;
-            foreach (object creature in Hostiles(avatar))
+            for (int hit = 0; hit < SlashHits; hit++)
             {
-                Vector3 p = Position(creature);
-                float along = vertical ? p.y - origin.y : p.x - origin.x;
-                float across = vertical ? p.x - origin.x : p.y - origin.y;
-                if (Math.Abs(along) <= reach && Math.Abs(across) <= half)
-                    Hurt(avatar, creature, amount, id);
+                Later(SlashDelay + SlashInterval * hit, () =>
+                {
+                    if (Dead(avatar))
+                        return;
+                    foreach (object creature in Hostiles(avatar).ToList())
+                    {
+                        Vector3 p = Position(creature);
+                        float along = vertical ? p.y - center.y : p.x - center.x;
+                        float across = vertical ? p.x - center.x : p.y - center.y;
+                        if (Math.Abs(along) <= SlashReach && Math.Abs(across) <= SlashHalfWidth)
+                            Hurt(avatar, creature, amount, id);
+                    }
+                });
             }
-            // 그림은 가로 6칸짜리 한 줄: 화면을 가로지르도록 길게 늘입니다. 흑은 검게, 백은 그대로.
+            // 그림은 가로 6칸짜리 한 줄(첫 프레임이 가는 선). 화면을 가로지르도록 늘이고, 선을 SlashDelay 동안 붙잡았다가 터뜨립니다.
             Color color = vertical ? White : new Color(0.07f, 0.05f, 0.12f, 1f);
-            CosmicFx.Spawn("slash", new Vector3(origin.x, origin.y + 0.5f, origin.z), vertical ? 90f : 0f, 6f, 2f, color, 18f, false, -1f);
+            float burst = SlashInterval * SlashHits; // 터지는 동안 나머지 4프레임
+            FxPlayer fx = CosmicFx.Spawn("slash", new Vector3(center.x, center.y + 0.5f, center.z), vertical ? 90f : 0f, 7f, 4f, color, 4f / burst, false, -1f);
+            if (fx != null)
+                fx.holdFirst = SlashDelay - burst / 4f; // 첫 프레임(선)이 SlashDelay 까지 보이도록
         }
 
         // 섬멸·명멸: 창이 옆에서 날아와 가까운 적을 꿰뚫습니다.
