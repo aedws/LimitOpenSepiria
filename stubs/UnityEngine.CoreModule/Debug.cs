@@ -98,6 +98,21 @@ namespace UnityEngine
     public static class Time
     {
         public static float deltaTime { get { return 0f; } }
+        public static float time { get { return 0f; } }
+    }
+
+    public class Renderer : Component
+    {
+        public int sortingOrder { get { return 0; } set { } }
+        public int sortingLayerID { get { return 0; } set { } }
+        public bool enabled { get { return false; } set { } }
+    }
+
+    public sealed class SpriteRenderer : Renderer
+    {
+        public Sprite sprite { get { return null; } set { } }
+        public Color color { get { return default; } set { } }
+        public bool flipX { get { return false; } set { } }
     }
 
     public class MonoBehaviour : Behaviour

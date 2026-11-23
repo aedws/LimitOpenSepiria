@@ -35,6 +35,7 @@ namespace FrostforgedCrescent
                     LanceFx.Apply(harmony);
                     LanceParry.Apply(harmony);
                     Riders.Apply(harmony);
+                    Cosmic.Apply(harmony);
                 }
                 catch (Exception e)
                 {

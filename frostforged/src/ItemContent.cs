@@ -34,6 +34,18 @@ namespace FrostforgedCrescent
         public const string LanceIceCritDamage = "FFCLANCEICECRITDMG";
         // 우주 속성 피해: 이 모드가 추가하는 속성. 종말기수의 무기 공격이 이 수치만으로 계산됩니다.
         public const string Cosmic = "FFCCOSMIC";
+        public const string EclipseCategory = "FFCECLIPSE";
+        public const string TaegeukCategory = "FFCTAEGEUK";
+        // 일월식(무지·허무)
+        public const string EclipseOn = "FFCECLIPSEON", VoidUp = "FFCVOIDUP", IgnoranceUp = "FFCIGNUP";
+        public const string IgnoranceSpeed = "FFCIGNSPEED", IgnoranceDamage = "FFCIGNDMG", IgnoranceStack = "FFCIGNSTACK", IgnoranceExtra = "FFCIGNEXTRA";
+        public const string DeepIgnorance = "FFCDEEPIGN", ScoreCosmic = "FFCSCORECOSMIC", VoidBonus = "FFCVOIDBONUS";
+        public const string CosmicCrit = "FFCCOSMICCRIT", Flicker = "FFCFLICKER", Crit = "FFCCRIT";
+        // 태극
+        public const string TaegeukDamage = "FFCTAEGEUKDMG", TaegeukExtra = "FFCTAEGEUKEXTRA", TaegeukOnHit = "FFCTAEGEUKONHIT";
+        public const string TaegeukChain = "FFCTAEGEUKCHAIN", TaegeukCritDamage = "FFCTAEGEUKCRITDMG";
+        public const string SlashBlack = "FFCSLASHBLACK", SlashWhite = "FFCSLASHWHITE";
+        public const string SpearBlue = "FFCSPEARBLUE", SpearBlueCount = "FFCSPEARBLUECOUNT", SpearRed = "FFCSPEARRED", SpearRedCount = "FFCSPEARREDCOUNT";
 
         private sealed class CustomStat
         {
@@ -56,6 +68,30 @@ namespace FrostforgedCrescent
             new CustomStat { Id = "FFC_LANCE_ICE_CRIT", Key = LanceIceCrit, Keyword = "FFC_LanceIceCrit", Symbol = "%", ShowValue = true },
             new CustomStat { Id = "FFC_LANCE_ICE_CRITDMG", Key = LanceIceCritDamage, Keyword = "FFC_LanceIceCritDmg", Symbol = "%", ShowValue = true },
             new CustomStat { Id = "FFC_COSMIC_DAMAGE", Key = Cosmic, Keyword = "FFC_Cosmic", Symbol = "", ShowValue = true },
+            new CustomStat { Id = "FFC_ECLIPSE_ON", Key = EclipseOn, Keyword = "FFC_EclipseOn", Symbol = "", ShowValue = false },
+            new CustomStat { Id = "FFC_VOID_UP", Key = VoidUp, Keyword = "FFC_VoidUp", Symbol = "", ShowValue = false },
+            new CustomStat { Id = "FFC_IGN_UP", Key = IgnoranceUp, Keyword = "FFC_IgnUp", Symbol = "", ShowValue = false },
+            new CustomStat { Id = "FFC_IGN_SPEED", Key = IgnoranceSpeed, Keyword = "FFC_IgnSpeed", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_IGN_DAMAGE", Key = IgnoranceDamage, Keyword = "FFC_IgnDamage", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_IGN_STACK", Key = IgnoranceStack, Keyword = "FFC_IgnStack", Symbol = "", ShowValue = true },
+            new CustomStat { Id = "FFC_IGN_EXTRA", Key = IgnoranceExtra, Keyword = "FFC_IgnExtra", Symbol = "", ShowValue = true },
+            new CustomStat { Id = "FFC_DEEP_IGN", Key = DeepIgnorance, Keyword = "FFC_DeepIgn", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_SCORE_COSMIC", Key = ScoreCosmic, Keyword = "FFC_ScoreCosmic", Symbol = "", ShowValue = true },
+            new CustomStat { Id = "FFC_VOID_BONUS", Key = VoidBonus, Keyword = "FFC_VoidBonus", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_COSMIC_CRIT", Key = CosmicCrit, Keyword = "FFC_CosmicCrit", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_FLICKER", Key = Flicker, Keyword = "FFC_Flicker", Symbol = "", ShowValue = false },
+            new CustomStat { Id = "FFC_CRIT", Key = Crit, Keyword = "FFC_Crit", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_TAEGEUK_DAMAGE", Key = TaegeukDamage, Keyword = "FFC_TaegeukDamage", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_TAEGEUK_EXTRA", Key = TaegeukExtra, Keyword = "FFC_TaegeukExtra", Symbol = "", ShowValue = true },
+            new CustomStat { Id = "FFC_TAEGEUK_ONHIT", Key = TaegeukOnHit, Keyword = "FFC_TaegeukOnHit", Symbol = "", ShowValue = false },
+            new CustomStat { Id = "FFC_TAEGEUK_CHAIN", Key = TaegeukChain, Keyword = "FFC_TaegeukChain", Symbol = "", ShowValue = false },
+            new CustomStat { Id = "FFC_TAEGEUK_CRITDMG", Key = TaegeukCritDamage, Keyword = "FFC_TaegeukCritDmg", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_SLASH_BLACK", Key = SlashBlack, Keyword = "FFC_SlashBlack", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_SLASH_WHITE", Key = SlashWhite, Keyword = "FFC_SlashWhite", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_SPEAR_BLUE", Key = SpearBlue, Keyword = "FFC_SpearBlue", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_SPEAR_BLUE_COUNT", Key = SpearBlueCount, Keyword = "FFC_SpearBlueCount", Symbol = "", ShowValue = true },
+            new CustomStat { Id = "FFC_SPEAR_RED", Key = SpearRed, Keyword = "FFC_SpearRed", Symbol = "%", ShowValue = true },
+            new CustomStat { Id = "FFC_SPEAR_RED_COUNT", Key = SpearRedCount, Keyword = "FFC_SpearRedCount", Symbol = "", ShowValue = true },
             new CustomStat { Id = "FFC_LANCE_ONLY", Key = "FFCLANCEONLY", Keyword = "FFC_LanceOnly", Symbol = "", ShowValue = false },
         };
 
@@ -90,6 +126,8 @@ namespace FrostforgedCrescent
             public int Id;
             public string Name;       // 내부 이름(키·파일 이름)
             public bool Bond;
+            public int Rarity = 3;        // 0 일반, 1 고급, 2 희귀, 3 전설
+            public bool Unique = true;    // [고유]
             public string[] Categories;
             public Stat[] Stats;
             public GameObject Prefab;
@@ -167,6 +205,149 @@ namespace FrostforgedCrescent
                     Stat.Exact("FFC_LANCE_ONLY", false, 1, 1, 1, 1),
                 }
             },
+            // ── 우주 속성: 일월식 ──
+            new Item
+            {
+                Id = 9101420, Name = "PurpleRing", Rarity = 0, Categories = new[] { EclipseCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_COSMIC_DAMAGE", false, 3, 4, 6, 8),
+                }
+            },
+            new Item
+            {
+                Id = 9101421, Name = "BlackBracelet", Rarity = 1, Categories = new[] { EclipseCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_IGN_SPEED", false, 5, 10, 20, 30, 40, 50),
+                }
+            },
+            new Item
+            {
+                Id = 9101422, Name = "IgnoranceBug", Rarity = 2, Categories = new[] { EclipseCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_IGN_DAMAGE", false, 5, 10, 20, 30, 40, 50),
+                    Stat.Exact("FFC_IGN_STACK", true, 0, 1, 2, 3, 4, 5),
+                }
+            },
+            new Item
+            {
+                Id = 9101423, Name = "YinCrescent", Rarity = 3, Categories = new[] { EclipseCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_IGN_EXTRA", true, 0, 1, 1, 2),
+                    Stat.Exact("FFC_IGN_STACK", false, 1, 1, 1, 2),
+                }
+            },
+            new Item
+            {
+                Id = 9101424, Name = "YangSun", Rarity = 3, Categories = new[] { EclipseCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_DEEP_IGN", false, 15, 30, 45, 60, 70, 80, 90, 100),
+                    Stat.Exact("FFC_COSMIC_DAMAGE", false, 1, 2, 3, 4, 5, 6, 7, 8),
+                }
+            },
+            new Item
+            {
+                Id = 9101425, Name = "SunMoonGale", Bond = true, Rarity = 3, Categories = new[] { EclipseCategory, TaegeukCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("ATTACK_SPEED", false, 5, 10, 20),
+                    Stat.Exact("FFC_TAEGEUK_ONHIT", true, 0, 0, 1),
+                }
+            },
+            new Item
+            {
+                Id = 9101426, Name = "ScoreSolarEclipse", Bond = true, Rarity = 3, Categories = new[] { EclipseCategory, "WINDSONG" },
+                Stats = new[]
+                {
+                    Stat.Exact("ATTACK_SPEED", false, 4, 8, 12),
+                    Stat.Exact("FFC_SCORE_COSMIC", false, 5, 10, 15),
+                }
+            },
+            new Item
+            {
+                Id = 9101427, Name = "ScoreLunarEclipse", Bond = true, Rarity = 3, Categories = new[] { EclipseCategory, "WINDSONG" },
+                Stats = new[]
+                {
+                    Stat.Exact("ATTACK_SPEED", false, 4, 8, 12),
+                    Stat.Exact("FFC_VOID_BONUS", true, 0, 0, 100),
+                }
+            },
+            new Item
+            {
+                Id = 9101428, Name = "ProphecyDoom", Bond = true, Rarity = 3, Categories = new[] { EclipseCategory, "PRECISION" },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_COSMIC_CRIT", false, 5, 10, 15, 20, 25, 30, 35, 40),
+                    Stat.Exact("FFC_FLICKER", false, 1, 1, 1, 1, 1, 1, 1, 1),
+                }
+            },
+            // ── 우주 속성: 태극 ──
+            new Item
+            {
+                Id = 9101430, Name = "CrescentRing", Rarity = 0, Unique = false, Categories = new[] { TaegeukCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_TAEGEUK_DAMAGE", false, 3, 6, 10),
+                    Stat.Exact("FFC_CRIT", false, 2, 4, 6),
+                }
+            },
+            new Item
+            {
+                Id = 9101431, Name = "ChamwolBlack", Rarity = 1, Categories = new[] { TaegeukCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_SLASH_BLACK", false, 100, 200, 350, 500),
+                }
+            },
+            new Item
+            {
+                Id = 9101432, Name = "ChamwolWhite", Rarity = 1, Categories = new[] { TaegeukCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_SLASH_WHITE", false, 100, 200, 350, 500),
+                }
+            },
+            new Item
+            {
+                Id = 9101433, Name = "AnnihilationBlue", Rarity = 2, Categories = new[] { TaegeukCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_SPEAR_BLUE", false, 100, 200, 300, 400, 500, 300),
+                    Stat.Exact("FFC_SPEAR_BLUE_COUNT", false, 1, 1, 1, 1, 1, 2),
+                }
+            },
+            new Item
+            {
+                Id = 9101434, Name = "FlickerRed", Rarity = 2, Categories = new[] { TaegeukCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_SPEAR_RED", false, 100, 200, 300, 400, 500, 300),
+                    Stat.Exact("FFC_SPEAR_RED_COUNT", false, 1, 1, 1, 1, 1, 2),
+                }
+            },
+            new Item
+            {
+                Id = 9101435, Name = "Dharani", Rarity = 3, Categories = new[] { TaegeukCategory },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_TAEGEUK_DAMAGE", false, 5, 10, 20, 30),
+                    Stat.Exact("FFC_TAEGEUK_EXTRA", true, 0, 1, 1, 2),
+                    Stat.Exact("FFC_TAEGEUK_CHAIN", true, 0, 0, 0, 1),
+                }
+            },
+            new Item
+            {
+                Id = 9101436, Name = "TaegeukGate", Bond = true, Rarity = 3, Categories = new[] { TaegeukCategory, "PRECISION" },
+                Stats = new[]
+                {
+                    Stat.Exact("FFC_TAEGEUK_CRITDMG", false, 5, 10, 20, 40),
+                    Stat.Exact("FFC_COSMIC_DAMAGE", false, 10, 15, 20, 30),
+                }
+            },
         };
 
         // ↑ 아래 둘은 '서리기수 : 돌격창 블루비틀' 전용입니다(효과는 블루비틀을 들고 있을 때만 적용).
@@ -175,8 +356,6 @@ namespace FrostforgedCrescent
         private static readonly string[] EarringNames = { "혈석 귀걸이", "Bloodstone Earring" };
 
         private static string root;
-        private static UnityEngine.Object category;
-        private static GameObject comboPrefab;
         private static readonly List<UnityEngine.Object> Keep = new List<UnityEngine.Object>();
 
         public static IEnumerable<int> ItemIds { get { return Items.Select(i => i.Id); } }
@@ -312,7 +491,7 @@ namespace FrostforgedCrescent
             Reflect.Set(charm, "showStatsEffectStringFirst", true);
             Reflect.Set(charm, "maxLevel", item.Stats[0].Values.Length - 1); // 값은 0레벨~최대 레벨까지 하나씩
             Reflect.Set(charm, "effectsString", Array.CreateInstance(Reflect.GameType("LocalizedString"), 0));
-            Reflect.Set(charm, "isUniqueEffect", true); // [고유]
+            Reflect.Set(charm, "isUniqueEffect", item.Unique); // [고유]
             if (!HorayModAPI.RegisterNetworkPrefab(prefab, Entry.ModId + ":item-" + item.Name.ToLowerInvariant()))
                 Log.Warn("'" + item.Name + "' 네트워크 프리팹 등록 실패");
             item.Prefab = prefab;
@@ -325,8 +504,8 @@ namespace FrostforgedCrescent
             Reflect.Set(entity, "id", item.Id);
             Reflect.Set(entity, "activeType", 0);            // Default
             Reflect.Set(entity, "type", 5);                  // Charm
-            Reflect.Set(entity, "rarity", 3);                // Legend
-            Reflect.Set(entity, "cost", 1100);
+            Reflect.Set(entity, "rarity", item.Rarity);
+            Reflect.Set(entity, "cost", new[] { 300, 500, 800, 1100 }[Math.Max(0, Math.Min(3, item.Rarity))]);
             Reflect.Set(entity, "isDual", item.Bond);        // [결속]
             Reflect.Set(entity, "aName", Text("Item_FFC_" + item.Name + "_Name"));
             Reflect.Set(entity, "aFlavorText", Text("Item_FFC_" + item.Name + "_FlavorText"));
@@ -337,56 +516,79 @@ namespace FrostforgedCrescent
             item.Entity = entity;
         }
 
-        // '생명' 콤보: (2) 최대 HP 비례 추가 피해 10%, (3) HP 흡수 +42.
+        // ── 콤보 ─────────────────────────────────────────────────────────────
+        private sealed class Combo
+        {
+            public string Id, Key, Icon;       // 문구 키: ItemCategory_FFC_<Key>(_Fruit), ComboEffect_FFC_<Key>
+            public string[] Tiers;             // "개수:상태ID/값"
+            public UnityEngine.Object Category;
+            public GameObject Prefab;
+        }
+
+        private static readonly Combo[] Combos =
+        {
+            // 생명: (2) 최대 HP 비례 추가 피해 10%, (3) HP 흡수 +42
+            new Combo { Id = VitalityCategory, Key = "Vitality", Icon = "Vitality.png", Tiers = new[] { "2:FFC_MAXHP_DAMAGE/10", "3:HP_STEAL/42" } },
+            // 일식: (1) 무지 부여, (2) 우주 +5, (3) 허무 500→750%, (5) 우주 +10, (7) 무지 15→25%
+            new Combo { Id = EclipseCategory, Key = "Eclipse", Icon = "Eclipse.png",
+                        Tiers = new[] { "1:FFC_ECLIPSE_ON/1", "2:FFC_COSMIC_DAMAGE/5", "3:FFC_VOID_UP/1", "5:FFC_COSMIC_DAMAGE/10", "7:FFC_IGN_UP/1" } },
+            // 태극: (2)(4)(6) 태극 피해 +3%, (8) 1회 추가 발동, (10) 2회 추가 발동
+            new Combo { Id = TaegeukCategory, Key = "Taegeuk", Icon = "Taegeuk.png",
+                        Tiers = new[] { "2:FFC_TAEGEUK_DAMAGE/3", "4:FFC_TAEGEUK_DAMAGE/3", "6:FFC_TAEGEUK_DAMAGE/3", "8:FFC_TAEGEUK_EXTRA/1", "10:FFC_TAEGEUK_EXTRA/1" } },
+        };
+
         private static void RegisterCategory(Type database)
         {
             var categories = Reflect.GetStatic(database, "itemCategories") as IDictionary;
             if (categories == null)
             {
-                Log.Error("콤보 목록을 찾지 못해 '생명' 콤보를 등록하지 못했습니다.");
+                Log.Error("콤보 목록을 찾지 못해 이 모드의 콤보를 등록하지 못했습니다.");
                 return;
             }
-
-            if (Reflect.IsNull(category) || Reflect.IsNull(comboPrefab))
+            Type comboType = Reflect.GameType("ComboEffectBase");
+            Type tierType = Reflect.GameType("ComboEffectBase+ComboStat");
+            Type categoryType = Reflect.GameType("ItemCategoryEntity");
+            foreach (Combo combo in Combos)
             {
-                Type comboType = Reflect.GameType("ComboEffectBase");
-                Type tierType = Reflect.GameType("ComboEffectBase+ComboStat");
-                Type categoryType = Reflect.GameType("ItemCategoryEntity");
-
-                comboPrefab = HorayModAPI.CreateNetworkPrefab("Combo-FFC_Vitality");
-                Component combo = comboPrefab.AddComponent(comboType);
-                Reflect.Set(combo, "defaultEffect", Text("ComboEffect_FFC_Vitality"));
-                Array tiers = Array.CreateInstance(tierType, 2);
-                tiers.SetValue(Tier(tierType, 2, "FFC_MAXHP_DAMAGE/10"), 0);
-                tiers.SetValue(Tier(tierType, 3, "HP_STEAL/42"), 1);
-                Reflect.Set(combo, "addStatByCombo", tiers);
-                if (!HorayModAPI.RegisterNetworkPrefab(comboPrefab, Entry.ModId + ":combo-vitality"))
-                    Log.Warn("'생명' 콤보 네트워크 프리팹 등록 실패");
-
-                object icon = SpriteLoader.Load(Path.Combine(root, "Sprites", "Items", "Vitality.png"), null, "콤보 아이콘");
-                UnityEngine.Object created = ScriptableObject.CreateInstance(categoryType);
-                created.name = "FFC_Vitality";
-                Reflect.Set(created, "hideFlags", 61);
-                Reflect.Set(created, "id", VitalityCategory);
-                Reflect.Set(created, "isEnabled", true);
-                Reflect.Set(created, "categoryName", Text("ItemCategory_FFC_Vitality"));
-                Reflect.Set(created, "categoryFruitName", Text("ItemCategory_FFC_Vitality_Fruit"));
-                Reflect.Set(created, "categoryIcon", icon);
-                Reflect.Set(created, "categoryFruitIcon", icon);
-                Reflect.Set(created, "categoryIceFruitIcon", icon);
-                Reflect.Set(created, "comboEffectPrefab", comboPrefab);
-                // 콤보가 켜질 때 나는 소리는 기존 콤보의 것을 씁니다.
-                foreach (object existing in categories.Values)
+                if (Reflect.IsNull(combo.Category) || Reflect.IsNull(combo.Prefab))
                 {
-                    if (Reflect.IsNull(existing))
-                        continue;
-                    Reflect.Set(created, "enableSound", Reflect.Get(existing, "enableSound"));
-                    break;
-                }
-                category = created;
-            }
+                    combo.Prefab = HorayModAPI.CreateNetworkPrefab("Combo-FFC_" + combo.Key);
+                    Component effect = combo.Prefab.AddComponent(comboType);
+                    Reflect.Set(effect, "defaultEffect", Text("ComboEffect_FFC_" + combo.Key));
+                    Array tiers = Array.CreateInstance(tierType, combo.Tiers.Length);
+                    for (int i = 0; i < combo.Tiers.Length; i++)
+                    {
+                        string[] parts = combo.Tiers[i].Split(':');
+                        tiers.SetValue(Tier(tierType, int.Parse(parts[0]), parts[1]), i);
+                    }
+                    Reflect.Set(effect, "addStatByCombo", tiers);
+                    if (!HorayModAPI.RegisterNetworkPrefab(combo.Prefab, Entry.ModId + ":combo-" + combo.Key.ToLowerInvariant()))
+                        Log.Warn("'" + combo.Key + "' 콤보 네트워크 프리팹 등록 실패");
 
-            categories[VitalityCategory] = category;
+                    object icon = SpriteLoader.Load(Path.Combine(root, "Sprites", "Items", combo.Icon), null, "콤보 아이콘 " + combo.Key);
+                    UnityEngine.Object created = ScriptableObject.CreateInstance(categoryType);
+                    created.name = "FFC_" + combo.Key;
+                    Reflect.Set(created, "hideFlags", 61);
+                    Reflect.Set(created, "id", combo.Id);
+                    Reflect.Set(created, "isEnabled", true);
+                    Reflect.Set(created, "categoryName", Text("ItemCategory_FFC_" + combo.Key));
+                    Reflect.Set(created, "categoryFruitName", Text("ItemCategory_FFC_" + combo.Key + "_Fruit"));
+                    Reflect.Set(created, "categoryIcon", icon);
+                    Reflect.Set(created, "categoryFruitIcon", icon);
+                    Reflect.Set(created, "categoryIceFruitIcon", icon);
+                    Reflect.Set(created, "comboEffectPrefab", combo.Prefab);
+                    // 콤보가 켜질 때 나는 소리는 기존 콤보의 것을 씁니다.
+                    foreach (object existing in categories.Values)
+                    {
+                        if (Reflect.IsNull(existing))
+                            continue;
+                        Reflect.Set(created, "enableSound", Reflect.Get(existing, "enableSound"));
+                        break;
+                    }
+                    combo.Category = created;
+                }
+                categories[combo.Id] = combo.Category;
+            }
         }
 
         private static object Tier(Type type, int count, string status)

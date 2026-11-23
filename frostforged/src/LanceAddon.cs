@@ -129,7 +129,7 @@ namespace FrostforgedCrescent
         }
 
         /// <summary>종말기수가 주는 우주 속성 피해</summary>
-        public const int CosmicBase = 40;
+        public const int CosmicBase = 10;
 
         private void AddCosmic(int value)
         {

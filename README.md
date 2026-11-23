@@ -162,5 +162,6 @@ dotnet build frostforged/src/FrostforgedCrescent.csproj -c Release
 - 먹구름 콤보 개선(`DarkCloudBoost.cs`): 먹구름이 0이어도 콤보(2)가 켜져 있으면 번개가 50% 피해로 발동하고, 이때 번개·소모 이펙트는 절반 크기로 나옵니다(이펙트 축소는 호스트 본인 화면만).
 - 무기 `서리기수 : 돌격창 블루비틀`(`LanceFactory.cs`, `LanceAddon.cs`): 돌격창 기오로이드의 프리팹을 복제해 창격을 쓰고, 전용 창 그림(`Sprites/lance.png`, 생성 스크립트 `frostforged/art/lance.py`)을 씁니다. 백상의 봉의 강화 무기입니다. 창격 3·4·5타 반복은 `LanceMotion.cs`(동작 위치를 모드 폴더 `lance_motion.txt` 에 기록), 약화된 볼루스파는 `WeakSpear.cs`, 얼음 궤적은 `LanceFx.cs`, 우클릭 패링과 돌파 찌르기는 `LanceParry.cs`, 손에 든 그림 조정은 `Sprites/lance.txt` 입니다.
 - 봉의 새 갈래 `만변창 : 4기사`(2단계)와 그 3단계 `서리기수 : 돌격창 블루비틀`·`화염기수`·`뇌격기수`·`종말기수`: 다섯 무기 모두 `LanceFactory.cs` 가 기오로이드의 프리팹으로 만들고, 공용 능력(공격 속도, 창격 3·4·5타, 패링·퓨리·돌파)은 `LanceAddon.cs`·`LanceMotion.cs`·`LanceParry.cs`, 기수별 고유 효과는 `Riders.cs`, 숫자 달린 상태 표시는 `StatusHud.cs` 입니다. 창 그림은 `frostforged/art/lance.py` 가 배색만 바꿔 만듭니다.
+- 우주 속성(`Cosmic.cs`): 전용 능력치 '우주 속성 피해', 상태이상 무지·허무, 콤보 `일식`·`태극`, 아티팩트 16종(`ItemContent.cs`). 태극 발동형(참월 흑·백, 섬멸 청, 명멸 적)과 무지·허무의 이펙트는 `Sprites/Fx/` 의 스프라이트 애니메이션을 `FxPlayer.cs`·`CosmicFx.cs` 가 재생합니다. `void.png`·`ignorance.png` 는 이미지 생성 API 로 만들어 `frostforged/art/fx_slice.py` 로 자른 것이고, 나머지는 `frostforged/art/fx.py` 가 그립니다.
 - 아티팩트 수치는 0레벨이 1레벨의 절반(불이익·켜짐/꺼짐 효과는 1레벨과 같음)이고, 1레벨부터 설정한 값이 차례로 적용됩니다.
 - 공격 모션을 첫 번째 베기로 고정하는 기능은 아직 없습니다. 0.1.0은 그 구현에 필요한 애니메이션 정보를 로그(`[FrostforgedCrescent]`)로 남깁니다.

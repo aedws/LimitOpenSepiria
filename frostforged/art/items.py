@@ -153,6 +153,33 @@ ART['FrostWingFeather']=[
 "....nn......",
 ]
 ART={k:ART[k] for k in ('FrostBlade','Frostmourne2','ScoreNorthWind','BloodstonePendant','BloodstoneCross','FrostWingFeather','Erindanua','Vitality')}
+# ── 우주 속성 아이콘 ──────────────────────────────────────────────────────
+PAL.update({'v':(168,133,255,255),'V':(95,55,140,255),'m':(214,196,255,255),'q':(40,32,58,255)})
+def swap(rows,table):
+    return [''.join(table.get(ch,ch) for ch in row) for row in rows]
+RING8=["..vvvv..",".vV..Vv.","vV....Vv","v......v","v......v","vV....Vv",".vVmmVv.","..vWWv.."]
+ARC=[".......xx",".....xxXx","...xxXXx.","..xXXx...",".xXXx....","xXXx.....","xXx......","xx......."]
+YINYANG=["..WWWW..",".WWWWqq.","WWqWWqqq","WWWWqqqq","WWWWqqqq","WWWqqWqq",".WWqqqq.","..qqqq.."]
+ART.update({
+ 'PurpleRing':RING8,
+ 'CrescentRing':swap(RING8,{'v':'s','V':'S','m':'c'}),
+ 'BlackBracelet':["..qqqq..",".qkvvkq.","qk....kq","q......q","q......q","qk....kq",".qkvvkq.","..qqqq.."],
+ 'IgnoranceBug':["..q..q..","...qq...",".qVVVVq.","qVvVVvVq","qVVmmVVq","qVvVVvVq",".qVVVVq.","..q..q.."],
+ 'YinCrescent':["...WWc..",".WWc....","WWc.....","Wc......","Wc......","WWc.....",".WWc....","...WWc.."],
+ 'YangSun':["....y....",".y..y..y.","..y.g.y..","...ggg...","yygyWygyy","...ggg...","..y.g.y..",".y..y..y.","....y...."],
+ 'SunMoonGale':[".EeeeeeE.","EeeeeeeeE",".eyyevve.",".eygevVe.",".eyyevve.",".eeeeeee.","EeeeeeeeE",".EeeeeeE."],
+ 'ScoreSolarEclipse':swap(ART['ScoreNorthWind'],{'a':'y','b':'g','B':'o'}),
+ 'ScoreLunarEclipse':swap(ART['ScoreNorthWind'],{'a':'m','b':'v','B':'V'}),
+ 'ProphecyDoom':[".qqqqqqq.","qVVVVVVVq","qVVmVmVVq","qVVVWVVVq","qVVmVmVVq","qVVVVVVVq","qeeeeeeeq",".qqqqqqq."],
+ 'ChamwolBlack':swap(ARC,{'x':'V','X':'q'}),
+ 'ChamwolWhite':swap(ARC,{'x':'s','X':'W'}),
+ 'AnnihilationBlue':swap(ART['Erindanua'],{'g':'s','y':'s'}),
+ 'FlickerRed':swap(ART['Erindanua'],{'c':'y','b':'g','B':'o','g':'R','y':'r'}),
+ 'Dharani':[".gg.....gg.","gEEeeeeeEEg","gEeetteeeEg","gEeettteeEg","gEeeetteeEg","gEEeeeeeEEg",".gg.....gg."],
+ 'TaegeukGate':YINYANG,
+ 'Eclipse':["..yggy..",".gqqqqg.","yqqqqqqy","gqqqqqqg","gqqqqqqg","yqqqqqqy",".gqqqqg.","..yggy.."],
+ 'Taegeuk':swap(YINYANG,{'W':'m','q':'V'}),
+})
 # 2픽셀 윤곽: 5x5 에서 네 귀퉁이를 뺀 모양
 RING=[(dx,dy) for dx in range(-2,3) for dy in range(-2,3) if abs(dx)+abs(dy)<4]
 def render(rows):
@@ -167,8 +194,9 @@ def render(rows):
     for (x,y),c in body.items(): px[x,y]=c
     return im
 out,prev=sys.argv[1],sys.argv[2]
-sheet=Image.new('RGBA',(len(ART)*150,220),(70,90,90,255))
+COLS=9
+sheet=Image.new('RGBA',(COLS*130,((len(ART)+COLS-1)//COLS)*150),(70,90,90,255))
 for i,(name,rows) in enumerate(ART.items()):
     im=render(rows); im.save(out+name+'.png')
-    b=im.resize((im.width*8,im.height*8),Image.NEAREST); sheet.paste(b,(i*150+4,8),b)
+    b=im.resize((im.width*5,im.height*5),Image.NEAREST); sheet.paste(b,((i%COLS)*130+6,(i//COLS)*150+8),b)
 sheet.save(prev)

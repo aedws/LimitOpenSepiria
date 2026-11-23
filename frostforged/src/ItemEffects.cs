@@ -67,6 +67,7 @@ namespace FrostforgedCrescent
             {
                 harmony.Patch(applyDamage, prefix: new HarmonyMethod(typeof(ItemEffects), nameof(DamagePrefix)),
                     postfix: new HarmonyMethod(typeof(ItemEffects), nameof(DamagePostfix)));
+                harmony.Patch(applyDamage, postfix: new HarmonyMethod(typeof(ItemEffects), nameof(CosmicPostfix)));
             }
 
             MethodInfo related = weapon != null ? AccessTools.GetDeclaredMethods(weapon).FirstOrDefault(m => m.Name == "GetRelatedStatMultiplier") : null;
@@ -123,16 +124,102 @@ namespace FrostforgedCrescent
 
         // 종말기수의 무기 공격을 우주 속성으로 표시합니다. 게임의 속성 목록에는 없는 속성이라, 내부적으로는 어느 속성에도
         // 속하지 않는 피해(Normal)로 두고 피해 숫자의 색만 우주 속성 색으로 바꿉니다. 혼돈 판정은 아닙니다.
-        private static void MarkCosmic(object damage)
+        private static bool MarkCosmic(object damage)
         {
             if (fromType == null || Convert.ToInt32(fromType.GetValue(damage)) != 1) // DirectAttack
-                return;
+                return false;
             string id = damageId == null ? null : damageId.GetValue(damage) as string;
             if (id == null || !id.StartsWith("Weapon_"))
-                return;
+                return false;
             elemental.SetValue(damage, Enum.ToObject(elemental.FieldType, 5)); // Normal
             Reflect.Call(damage, null, "SetCustomColor", false, CosmicColor);
             LogOnce(7, "종말기수 확인: 무기 공격을 우주 속성 피해로 처리");
+            return true;
+        }
+
+        private static readonly System.Random Dice = new System.Random();
+
+        // 피해가 계산되기 전: 우주 속성 표시, 우주·태극·명멸의 치명타 보정.
+        private static void CosmicPrefix(object attacker, object damage)
+        {
+            string id = damageId == null ? null : damageId.GetValue(damage) as string;
+            bool cosmic = Cosmic.IsCosmic(id);
+            if (cosmic)
+            {
+                elemental.SetValue(damage, Enum.ToObject(elemental.FieldType, 5)); // Normal
+                Reflect.Call(damage, null, "SetCustomColor", false, CosmicColor);
+            }
+            else if (LanceAddon.KindOf(attacker) == LanceAddon.Doom)
+            {
+                cosmic = MarkCosmic(damage);
+            }
+
+            float chance = (float)critChance.GetValue(damage);
+            int bonus = Stat(attacker, ItemContent.Crit);                 // 초승달 반지
+            if (cosmic)
+                bonus += Stat(attacker, ItemContent.CosmicCrit);          // 예언서 : '종말'
+            if (bonus > 0)
+            {
+                chance += bonus;
+                critChance.SetValue(damage, chance);
+            }
+            if (critDamageRate == null)
+                return;
+            int rate = (int)critDamageRate.GetValue(damage);
+            if (Cosmic.IsTaegeuk(id))
+                rate += Stat(attacker, ItemContent.TaegeukCritDamage);    // 태극문 : '조화'
+            // 명멸: 치명타 확률이 100% 를 넘으면 넘은 만큼의 확률로 치명타 피해 1.5배
+            if (chance > 100f && Stat(attacker, ItemContent.Flicker) > 0 && Dice.Next(100) < chance - 100f)
+            {
+                rate = (int)(1.5f * (100 + rate)) - 100;
+                LogOnce(5, "명멸 발동 확인 (치명타 확률 " + chance.ToString("0") + "%)");
+            }
+            critDamageRate.SetValue(damage, rate);
+        }
+
+        /// <summary>attacker 가 victim 에게 정해진 양의 피해를 줍니다. damageType: 1 = 일반 타격, 2 = 상태이상 피해.</summary>
+        public static void DealDamage(object attacker, object victim, float amount, string id, int damageType)
+        {
+            if (getDamage == null || applyDamage == null || Reflect.IsNull(attacker) || Reflect.IsNull(victim))
+                return;
+            ParameterInfo[] p = getDamage.GetParameters();
+            object position = ((Component)victim).transform.position;
+            object created = getDamage.Invoke(null, new[]
+            {
+                attacker, id, position, Convert.ChangeType(4294967295L, p[3].ParameterType), amount,
+                Enum.ToObject(p[5].ParameterType, damageType), Enum.ToObject(p[6].ParameterType, 0),
+                Activator.CreateInstance(p[7].ParameterType), 0, 0f
+            });
+            applyDamage.Invoke(victim, new[] { created });
+        }
+
+        // 피해가 들어간 뒤: 우주 속성의 무지 부여, 무기 적중에 반응하는 우주 아티팩트.
+        private static void CosmicPostfix(object __instance, object damage)
+        {
+            try
+            {
+                if (damage == null)
+                    return;
+                object attacker = origin.GetValue(damage);
+                if (Reflect.IsNull(attacker) || !avatarType.IsInstanceOfType(attacker) || ReferenceEquals(attacker, __instance))
+                    return;
+                if (Convert.ToInt32(damageResult.GetValue(damage)) <= 0)
+                    return;
+                // 아래에서 새 피해를 만들면 damage 가 재사용될 수 있으므로 필요한 값은 먼저 읽어 둡니다.
+                string id = damageId == null ? null : damageId.GetValue(damage) as string;
+                bool direct = fromType != null && Convert.ToInt32(fromType.GetValue(damage)) == 1;
+                bool cosmic = (Cosmic.IsCosmic(id) && !Cosmic.IsDebuff(id))
+                              || (direct && id != null && id.StartsWith("Weapon_") && LanceAddon.KindOf(attacker) == LanceAddon.Doom);
+                Cosmic.Track(attacker);
+                if (direct)
+                    Cosmic.OnWeaponHit(attacker, __instance);
+                if (cosmic)
+                    Cosmic.OnCosmicHit(attacker, __instance);
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+            }
         }
 
         // 피해가 계산되기 전: 얼음 속성 공격의 치명타 확률.
@@ -145,8 +232,7 @@ namespace FrostforgedCrescent
                 object attacker = origin.GetValue(damage);
                 if (Reflect.IsNull(attacker) || !avatarType.IsInstanceOfType(attacker))
                     return;
-                if (LanceAddon.KindOf(attacker) == LanceAddon.Doom)
-                    MarkCosmic(damage);
+                CosmicPrefix(attacker, damage);
                 if (!IsIce(elemental.GetValue(damage)))
                     return;
                 int bonus = Stat(attacker, ItemContent.IceCrit);
